@@ -4,6 +4,9 @@ const RED_ID = "cyberpunk-red-core";
 const TAB = "edgerunners-2070";
 const L = (key, data) => (data ? game.i18n.format(`EDGERUNNERS2070.${key}`, data) : game.i18n.localize(`EDGERUNNERS2070.${key}`));
 const esc = (s) => Handlebars.escapeExpression(String(s ?? ""));
+// Hojas con la pestaña 2070 abierta. Foundry reactiva las pestañas antes de que
+// este módulo inyecte la suya, así que el estado se recuerda aquí.
+const openTab = new WeakSet();
 
 // Ajustes de mundo. Los valores por defecto siguen el Mission Kit para RED completo;
 // el DJ puede cambiarlos. Se usarán a partir de M4.
@@ -124,7 +127,12 @@ Hooks.on("renderItemSheet", (sheet, html) => {
   sibling.parentElement.appendChild(tab);
   tab.querySelector('[data-action="er2070-edit"]')?.addEventListener("click", () => openEditor(sheet.item));
 
+  nav.addEventListener("click", (event) => {
+    const link = event.target.closest("[data-tab]");
+    if (!link) return;
+    if (link.dataset.tab === TAB) openTab.add(sheet);
+    else openTab.delete(sheet);
+  });
   // Si la hoja se vuelve a dibujar con esta pestaña abierta, reactivarla.
-  const tabs = sheet._tabs?.[0];
-  if (tabs?.active === TAB) tabs.activate(TAB);
+  if (openTab.has(sheet)) sheet._tabs?.[0]?.activate(TAB);
 });
