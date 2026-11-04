@@ -1,0 +1,14 @@
+/* Estilos del panel 2070. Ámbito limitado a la pestaña del módulo. */
+.er2070-tab .er2070-panel { padding: 0.5rem; }
+.er2070-tab .er2070-hint { opacity: 0.75; font-size: 0.9em; }
+.er2070-tab .er2070-caps,
+.er2070-tab .er2070-msgs { list-style: none; margin: 0.5rem 0; padding: 0; }
+.er2070-tab .er2070-cap { display: flex; gap: 0.75rem; align-items: baseline; padding: 0.2rem 0; border-bottom: 1px solid rgba(127, 127, 127, 0.3); }
+.er2070-tab .er2070-type { font-weight: bold; min-width: 12em; }
+.er2070-tab .er2070-id { font-family: monospace; opacity: 0.8; }
+.er2070-tab .er2070-state { margin-left: auto; font-size: 0.85em; }
+.er2070-tab .er2070-inactive .er2070-state,
+.er2070-tab .er2070-errors li { color: #c0392b; }
+.er2070-tab .er2070-disabled .er2070-state,
+.er2070-tab .er2070-warnings li { color: #b9770e; }
+.er2070-tab .er2070-msgs li { font-size: 0.9em; padding: 0.1rem 0; }

@@ -26,3 +26,17 @@ Añadir a **Cyberpunk RED – Core** estructuras de datos, automatizaciones y UI
 Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su configuración y ser posible crear un **Item genérico de prueba** mediante las capacidades del módulo. No deben aparecer objetos comerciales en compendios, barras laterales o inventarios.
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
+
+## Estado actual: 0.1.0 (M3, Contrato 1 — solo lectura)
+
+- **Requisitos:** Foundry V12 (verificado 12.343), sistema `cyberpunk-red-core` (verificado v0.92.4) y módulo `lib-wrapper`.
+- **Incluye:** ajustes de mundo (valores por defecto de las reglas 2070, todavía sin efecto en juego), una pestaña **2070** en la hoja de cualquier Item con las capacidades detectadas y su validación, y un editor JSON (solo DJ) que valida antes de guardar.
+- **No incluye todavía:** ninguna automatización en juego. El módulo no envuelve ni modifica funciones de RED en esta versión.
+- **Datos:** `flags["edgerunners-2070"] = { schemaVersion: 1, capabilities: [...] }`. Al desactivar el módulo, estos datos quedan inertes.
+- **API para importadores:** `game.modules.get("edgerunners-2070").api` → `schemaVersion`, `validate(itemOrData)`, `migrate(data)`, `getCapabilities(item)`.
+
+### Pruebas
+
+Lógica pura del esquema, con datos sintéticos: `node --test "tests/*.test.mjs"` (Node 20 o superior). Las pruebas en Foundry están descritas en `../03-coordinacion/PRUEBAS.md`.
+
+*Contenido no oficial, no aprobado ni respaldado por R. Talsorian Games.*

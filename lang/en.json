@@ -1,0 +1,56 @@
+{
+  "EDGERUNNERS2070": {
+    "tab": "2070",
+    "panel": {
+      "hint": "Generic 2070s capabilities configured on this item. They are not applied in play yet.",
+      "empty": "This item has no configured capabilities.",
+      "edit": "Edit capabilities"
+    },
+    "state": {
+      "active": "active",
+      "disabled": "disabled",
+      "inactive": "invalid or unknown"
+    },
+    "editor": {
+      "title": "2070 capabilities: {name}",
+      "hint": "Contract v1 JSON (schemaVersion and a capabilities list). Validated before saving.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "badJson": "Invalid JSON: {error}",
+      "invalid": "Not saved. {count} error(s); first: {first}",
+      "warnings": "Saved with {count} warning(s). Check the 2070 tab."
+    },
+    "validation": {
+      "notObject": "{path}: an object was expected.",
+      "badVersion": "{path}: invalid schema version.",
+      "newerVersion": "{path}: data uses version {version}, but this module only supports up to {supported}. No capability will be applied.",
+      "badId": "{path}: invalid identifier (lowercase letters, digits and hyphens; 32 max).",
+      "duplicateId": "{path}: identifier \"{id}\" is repeated on this item.",
+      "unknownType": "{path}: unknown capability type \"{value}\". Kept, but not applied.",
+      "unexpectedHost": "{path}: \"{type}\" is meant for items of type {hosts}.",
+      "missingParam": "{path}: a required parameter is missing.",
+      "badParam": "{path}: invalid value ({kind} expected).",
+      "unknownParam": "{path}: unknown parameter; kept but unused.",
+      "unknownOperation": "{path}: unknown operation \"{value}\".",
+      "unknownCondition": "{path}: unknown condition \"{value}\"."
+    },
+    "settings": {
+      "neuroportRequired": { "name": "Require neuroport", "hint": "Non-medical cyberware needs an installed neuroport." },
+      "actionCounter": {
+        "name": "Per-turn action counter",
+        "hint": "Automatic: counts NET actions and warns when exceeding the maximum. Reminder: only shows the maximum.",
+        "auto": "Automatic",
+        "reminder": "Visual reminder"
+      },
+      "selfIceDv": { "name": "Self-ICE barrier DVs", "hint": "DV of every barrier by number of installed Self-ICE (1, 2, 3…), comma separated." },
+      "controlNodeDv": { "name": "Neuroport control node DV", "hint": "DV of the neuroport control node." },
+      "firewallDv": { "name": "Basic firewall DV", "hint": "Interface DV to bypass a neuroport's firewall." },
+      "firewallAutoRank": { "name": "Rank that bypasses the firewall", "hint": "Interface rank from which the basic firewall is bypassed automatically." },
+      "rangeExternal": { "name": "External cyberdeck range (m)", "hint": "Quickhack range with a traditional external cyberdeck." },
+      "rangeExternalHardware": { "name": "External cyberdeck range with hardware (m)", "hint": "Range with the hardware option that extends it." },
+      "rangePortNet": { "name": "Neuroport port range vs architectures (m)", "hint": "Range against normal NET architectures using the neuroport cyberdeck port." },
+      "rangePortNeuroport": { "name": "Neuroport port range vs neuroports (m)", "hint": "Range to connect to neuroports using the neuroport cyberdeck port." },
+      "cableDistance": { "name": "Maximum cable connection distance (m)", "hint": "Beyond it the cable pulls out and the disconnection is forced." }
+    }
+  }
+}

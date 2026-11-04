@@ -1,0 +1,25 @@
+{
+  "id": "edgerunners-2070",
+  "title": "Edgerunners 2070",
+  "description": "Extensión no oficial para Cyberpunk RED – Core: capacidades genéricas para partidas ambientadas en los años 2070. No incluye contenido comercial. Contenido no oficial, no aprobado ni respaldado por R. Talsorian Games.",
+  "version": "0.1.0",
+  "authors": [{ "name": "Ellyjah" }],
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12.343",
+    "maximum": "12"
+  },
+  "relationships": {
+    "systems": [{ "id": "cyberpunk-red-core", "type": "system" }],
+    "requires": [{ "id": "lib-wrapper", "type": "module" }]
+  },
+  "esmodules": ["scripts/main.js"],
+  "styles": ["styles/edgerunners-2070.css"],
+  "languages": [
+    { "lang": "es", "name": "Español", "path": "lang/es.json" },
+    { "lang": "en", "name": "English", "path": "lang/en.json" }
+  ],
+  "flags": {
+    "verifiedSystemVersion": "v0.92.4"
+  }
+}

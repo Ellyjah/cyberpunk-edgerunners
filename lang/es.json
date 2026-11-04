@@ -1,0 +1,86 @@
+{
+  "EDGERUNNERS2070": {
+    "tab": "2070",
+    "panel": {
+      "hint": "Capacidades genéricas de los años 2070 configuradas en este objeto. Todavía no se aplican en juego.",
+      "empty": "Este objeto no tiene capacidades configuradas.",
+      "edit": "Editar capacidades"
+    },
+    "state": {
+      "active": "activa",
+      "disabled": "desactivada",
+      "inactive": "no válida o desconocida"
+    },
+    "editor": {
+      "title": "Capacidades 2070: {name}",
+      "hint": "Formato JSON del contrato v1 (schemaVersion y lista capabilities). Se valida antes de guardar.",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "badJson": "JSON no válido: {error}",
+      "invalid": "No se ha guardado. {count} error(es); el primero: {first}",
+      "warnings": "Guardado con {count} aviso(s). Revisa la pestaña 2070."
+    },
+    "validation": {
+      "notObject": "{path}: se esperaba un objeto.",
+      "badVersion": "{path}: versión de esquema no válida.",
+      "newerVersion": "{path}: los datos usan la versión {version}, pero este módulo solo entiende hasta la {supported}. No se aplicará ninguna capacidad.",
+      "badId": "{path}: identificador no válido (minúsculas, cifras y guiones; máximo 32).",
+      "duplicateId": "{path}: el identificador «{id}» está repetido en este objeto.",
+      "unknownType": "{path}: tipo de capacidad desconocido «{value}». Se conserva, pero no se aplicará.",
+      "unexpectedHost": "{path}: «{type}» está pensada para objetos de tipo {hosts}.",
+      "missingParam": "{path}: falta un parámetro obligatorio.",
+      "badParam": "{path}: valor no válido (se esperaba {kind}).",
+      "unknownParam": "{path}: parámetro desconocido; se conserva sin usar.",
+      "unknownOperation": "{path}: operación desconocida «{value}».",
+      "unknownCondition": "{path}: condición desconocida «{value}»."
+    },
+    "settings": {
+      "neuroportRequired": {
+        "name": "Exigir neuropuerto",
+        "hint": "El ciberequipo que no sea de grado médico necesita un neuropuerto instalado."
+      },
+      "actionCounter": {
+        "name": "Contador de acciones por turno",
+        "hint": "Automático: cuenta las acciones NET y avisa al superar el máximo. Recordatorio: solo muestra el máximo.",
+        "auto": "Automático",
+        "reminder": "Recordatorio visual"
+      },
+      "selfIceDv": {
+        "name": "VD de las barreras de Hielo personal",
+        "hint": "VD de todas las barreras según el número de Hielos personales instalados (1, 2, 3…), separadas por comas."
+      },
+      "controlNodeDv": {
+        "name": "VD del nodo de control del neuropuerto",
+        "hint": "VD del nodo de control del neuropuerto (holófono)."
+      },
+      "firewallDv": {
+        "name": "VD del cortafuegos básico",
+        "hint": "VD de la tirada de Interface para sortear el cortafuegos de un neuropuerto."
+      },
+      "firewallAutoRank": {
+        "name": "Rango que supera el cortafuegos sin tirar",
+        "hint": "Rango de Interface a partir del cual el cortafuegos básico se supera automáticamente."
+      },
+      "rangeExternal": {
+        "name": "Alcance de ciberterminal externo (m)",
+        "hint": "Alcance de hackeo rápido con un ciberterminal externo tradicional."
+      },
+      "rangeExternalHardware": {
+        "name": "Alcance de ciberterminal externo con hardware (m)",
+        "hint": "Alcance con la opción de hardware que lo amplía."
+      },
+      "rangePortNet": {
+        "name": "Alcance del puerto de neuropuerto contra arquitecturas (m)",
+        "hint": "Alcance contra arquitecturas de RED normales usando el puerto de ciberterminal del neuropuerto."
+      },
+      "rangePortNeuroport": {
+        "name": "Alcance del puerto de neuropuerto contra neuropuertos (m)",
+        "hint": "Alcance para conectarse a neuropuertos usando el puerto de ciberterminal del neuropuerto."
+      },
+      "cableDistance": {
+        "name": "Distancia máxima de la conexión por cable (m)",
+        "hint": "Si se supera, el cable se suelta y la desconexión es forzosa."
+      }
+    }
+  }
+}
