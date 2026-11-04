@@ -1,0 +1,25 @@
+# Este repositorio se prevé PUBLICABLE; nunca introducir material comercial.
+*.pdf
+*.epub
+*.zip
+*.rar
+*.7z
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+node_modules/
+worlds/
+assets-oficiales/
+material-privado/
+material-comercial/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.mp3
+*.ogg
+*.mp4
+# Recursos gráficos ORIGINALES solo podrán añadirse tras comprobar la licencia.
