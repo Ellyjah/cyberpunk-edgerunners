@@ -2,7 +2,7 @@
   "id": "edgerunners-2070",
   "title": "Edgerunners 2070",
   "description": "Extensión no oficial para Cyberpunk RED – Core: capacidades genéricas para partidas ambientadas en los años 2070. No incluye contenido comercial. Contenido no oficial, no aprobado ni respaldado por R. Talsorian Games.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "authors": [{ "name": "Ellyjah" }],
   "compatibility": {
     "minimum": "12",

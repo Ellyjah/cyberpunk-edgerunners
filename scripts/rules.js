@@ -94,3 +94,94 @@ export function netActionBonus(caps, { cable }) {
   for (const g of groups.values()) if (g.count >= g.minStack) total += g.bonus;
   return total;
 }
+
+// ---------------------------------------------------------------- armas y ciberequipo (M5)
+
+/** Agrupa capacidades por `stackKey` y devuelve solo las de grupos con al menos `minStack` piezas. */
+export function stackSatisfied(caps) {
+  const counts = new Map();
+  for (const cap of caps) counts.set(cap.stackKey ?? cap.id, (counts.get(cap.stackKey ?? cap.id) ?? 0) + 1);
+  return caps.filter((cap) => counts.get(cap.stackKey ?? cap.id) >= (cap.minStack ?? 1));
+}
+
+/**
+ * Plan de consumo de un disparo.
+ * @param {object} p
+ * @param {number} p.magazine - balas en el cargador
+ * @param {string} p.mode - single | aimed | autofire | suppressive
+ * @param {object|null} p.perAttack - capacidad `ammo-per-attack` (o la del estado cargado)
+ * @param {number|null} p.minToFire - capacidad `min-ammo-to-fire`
+ * @returns {{blocked: string|null, consume: number|null, insufficientDamage: string|null}}
+ *   `consume` null = consumo normal de RED.
+ */
+export function shotPlan({ magazine, mode, perAttack = null, minToFire = null }) {
+  if (minToFire && magazine < minToFire) return { blocked: "minAmmo", consume: null, insufficientDamage: null };
+  const modes = perAttack?.modes ?? ["single", "aimed"];
+  if (!perAttack || !modes.includes(mode)) return { blocked: null, consume: null, insufficientDamage: null };
+  if (magazine >= perAttack.count) return { blocked: null, consume: perAttack.count, insufficientDamage: null };
+  const fallback = perAttack.ifInsufficient;
+  if (!fallback || magazine < 1) return { blocked: "notEnoughAmmo", consume: null, insufficientDamage: null };
+  return { blocked: null, consume: fallback.consumeAll === false ? 1 : magazine, insufficientDamage: fallback.damage ?? null };
+}
+
+/** Característica efectiva para una acción: la mayor entre la real y las capacidades que cubren ese ámbito. */
+export function effectiveStat(base, caps, stat, scope) {
+  const values = stackSatisfied(caps.filter((c) => c.stat === stat)).filter((c) => !scope || (c.scope ?? []).includes(scope)).map((c) => c.value);
+  return Math.max(base, ...values);
+}
+
+/**
+ * Evalúa una condición (CONTRATOS.md §6) con funciones de consulta sobre el actor.
+ * @returns {{ok: boolean, unknown: boolean}}
+ */
+export function evaluateCondition(cond, facts, scope) {
+  const res = (ok) => ({ ok: Boolean(ok), unknown: false });
+  switch (cond?.type) {
+    case "actorHasCapability": return res(facts.hasCapability(cond.capability));
+    case "actorHasTag": return res(facts.hasTag(cond.tag));
+    case "actorHasCyberwareType": return res(facts.hasCyberwareType(cond.cyberwareType, cond.foundational));
+    case "statAtLeast": return res(facts.stat(cond.stat, cond.scope ?? scope) >= cond.value);
+    case "roleRankAtLeast": return res(facts.roleRank(cond.role) >= cond.rank);
+    case "targetUnaware": return facts.targetUnaware === undefined ? { ok: false, unknown: true } : res(facts.targetUnaware);
+    case "connected": return res(facts.connected(cond.mode ?? "any"));
+    case "anyOf": {
+      const parts = (cond.conditions ?? []).map((c) => evaluateCondition(c, facts, scope));
+      return { ok: parts.some((p) => p.ok), unknown: !parts.some((p) => p.ok) && parts.some((p) => p.unknown) };
+    }
+    case "allOf": {
+      const parts = (cond.conditions ?? []).map((c) => evaluateCondition(c, facts, scope));
+      return { ok: parts.every((p) => p.ok), unknown: parts.some((p) => p.unknown) };
+    }
+    default: return { ok: false, unknown: true };
+  }
+}
+
+/** ¿Permite el segundo intento? Solo si falló por un margen no mayor que `maxMargin`. */
+export function retryAllowed(result, dv, maxMargin) {
+  return result < dv && dv - result <= maxMargin;
+}
+
+/** Daño desarmado de RED según TCO (con ciberbrazo fundacional, el desarmado con TCO ≤ 4 hace 2d6). */
+export function unarmedDamage(body, { martialArts = false, cyberArm = false } = {}) {
+  if (body <= 4) return !martialArts && cyberArm ? "2d6" : "1d6";
+  if (body <= 6) return "2d6";
+  if (body <= 10) return "3d6";
+  return "4d6";
+}
+
+/** Porcentaje de CP ignorado por RED a partir de un multiplicador de CP (0.5 → 50). */
+export function ignoreArmorFromMultiplier(multiplier, current = 0) {
+  if (typeof multiplier !== "number" || multiplier < 0 || multiplier >= 1) return current;
+  return Math.max(current, Math.round((1 - multiplier) * 100));
+}
+
+/** Recámara que dispara: la activa si está cargada; si no, la primera cargada; -1 si ninguna. */
+export function firingChamber(chambers, active = 0) {
+  if (chambers[active]) return active;
+  return chambers.findIndex(Boolean);
+}
+
+/** Modo de disparo a partir del nombre de la clase de tirada de RED. */
+export function attackMode(className) {
+  return { CPRAimedAttackRoll: "aimed", CPRAutofireRoll: "autofire", CPRSuppressiveFireRoll: "suppressive", CPRAttackRoll: "single" }[className] ?? null;
+}

@@ -456,18 +456,16 @@ class NetConsole extends Application {
 
 // ---------------------------------------------------------------- registro
 
+/** Las tiradas de Interface lanzadas desde la ficha de RED también cuentan como acción NET (lo llama el envoltorio de confirmRoll de gear.js). */
+export function countInterfaceRoll(item, cprRoll) {
+  if (item.type === "cyberdeck" && item.actor && NET_ABILITIES.has(cprRoll?.ability) && cprRoll?.constructor?.name === "CPRInterfaceRoll") countNetAction(item.actor);
+}
+
 export function registerNetHooks() {
   Hooks.on("getActorSheetHeaderButtons", (sheet, buttons) => {
     if (!["character", "mook"].includes(sheet.actor?.type)) return;
     buttons.unshift({ label: L("net.console"), class: "er2070-net-open", icon: "fas fa-network-wired", onclick: () => new NetConsole(sheet.actor, sheet.token).render(true) });
   });
-
-  // Las tiradas de Interface lanzadas desde la ficha de RED también cuentan como acción NET.
-  libWrapper.register(MODULE_ID, "CONFIG.Item.documentClass.prototype.confirmRoll", function (wrapped, cprRoll, ...args) {
-    const result = wrapped(cprRoll, ...args);
-    if (this.type === "cyberdeck" && this.actor && NET_ABILITIES.has(cprRoll?.ability) && cprRoll?.constructor?.name === "CPRInterfaceRoll") countNetAction(this.actor);
-    return result;
-  }, "WRAPPER");
 
   Hooks.on("updateToken", async (doc, changes) => {
     if (game.user !== game.users.activeGM || !("x" in changes || "y" in changes) || !doc.actor) return;

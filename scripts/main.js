@@ -1,6 +1,7 @@
 import { MODULE_ID, SCHEMA_VERSION, CAPABILITIES, validate, migrate, getCapabilities } from "./schema.js";
 import { registerEffectHooks, listenSocket } from "./effects.js";
 import { registerNetHooks } from "./net.js";
+import { registerGearHooks } from "./gear.js";
 
 const RED_ID = "cyberpunk-red-core";
 const TAB = "edgerunners-2070";
@@ -48,6 +49,7 @@ Hooks.once("setup", () => {
   if (game.system.id !== RED_ID) return;
   registerEffectHooks();
   registerNetHooks();
+  registerGearHooks();
 });
 Hooks.once("ready", () => {
   if (game.system.id === RED_ID) listenSocket();

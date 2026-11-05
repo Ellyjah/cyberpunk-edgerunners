@@ -36,10 +36,10 @@ export function resolveActor(uuid) {
   return doc?.documentName === "Token" ? doc.actor : doc;
 }
 
-/** Capacidades activas de los Items instalados (ciberequipo) o equipados (ciberterminal). */
+/** Capacidades activas de los Items instalados (ciberequipo) o equipados (ciberterminal, equipo). Un implante suspendido no aporta nada. */
 export function actorCapabilities(actor, type) {
   return actor.items
-    .filter((i) => (i.type === "cyberware" ? i.system.isInstalled : i.type === "cyberdeck" ? i.system.equipped === "equipped" : false))
+    .filter((i) => (i.type === "cyberware" ? i.system.isInstalled && !isSuspended(i) : ["cyberdeck", "gear"].includes(i.type) ? i.system.equipped === "equipped" : false))
     .flatMap((item) => getCapabilities(item).filter((c) => c.type === type).map((c) => ({ ...c, item })));
 }
 
@@ -79,7 +79,7 @@ function toDuration(duration, target) {
 }
 
 /** Crea el ActiveEffect que representa una operación temporal sobre el objetivo. */
-async function createCarrier(target, ctx, { changes = [], duration, timed = {} }) {
+export async function createCarrier(target, ctx, { changes = [], duration, timed = {}, img = "icons/svg/daze.svg" }) {
   const { aeDuration, extra } = toDuration(duration, target);
   const cats = {};
   const situational = {};
@@ -91,7 +91,7 @@ async function createCarrier(target, ctx, { changes = [], duration, timed = {} }
   // como un Item arrastrado a la hoja de PNJ y falla con los ActiveEffects.
   const effect = await CONFIG.ActiveEffect.documentClass.create({
     name: ctx.label,
-    img: "icons/svg/daze.svg",
+    img,
     origin: ctx.sourceUuid,
     duration: aeDuration,
     changes,
@@ -109,7 +109,7 @@ const expiring = new Set();
 /** Retira un portador y todo lo que creó (Items temporales, estados, suspensiones). */
 export async function expireCarrier(effect) {
   const actor = effect.parent;
-  if (!actor?.effects.has(effect.id) || expiring.has(effect.uuid)) return;
+  if (!actor?.effects.has(effect.id) || !ownsEffect(actor, effect.id) || expiring.has(effect.uuid)) return;
   expiring.add(effect.uuid);
   try {
     const timed = effect.flags[MODULE_ID]?.timed ?? {};
@@ -120,6 +120,11 @@ export async function expireCarrier(effect) {
     for (const id of timed.suspended ?? []) {
       const item = actor.items.get(id);
       if (item) steps.push(() => item.setFlag(MODULE_ID, "suspendedBy", (item.getFlag(MODULE_ID, "suspendedBy") ?? []).filter((e) => e !== effect.id)));
+    }
+    // Al terminar una activación empieza su enfriamiento.
+    if (timed.activation?.cooldown) {
+      steps.push(() => createCarrier(actor, { label: L("gear.cooldownName", { name: timed.activation.name }), sourceUuid: timed.source },
+        { duration: timed.activation.cooldown, timed: { cooldown: { itemId: timed.activation.itemId } }, img: "icons/svg/clockwork.svg" }));
     }
     // Un paso que falle no debe impedir retirar el efecto.
     for (const step of steps) {
@@ -137,11 +142,20 @@ function carrierActors() {
   const tokens = canvas.scene?.tokens.filter((t) => !t.actorLink && t.actor).map((t) => t.actor) ?? [];
   return [...game.actors.contents, ...tokens];
 }
-const carriersOf = (actor) => actor.effects.filter((e) => e.flags[MODULE_ID]?.timed);
+export const carriersOf = (actor) => actor.effects.filter((e) => e.flags[MODULE_ID]?.timed);
+// Un actor sintético (token no vinculado) también muestra los efectos de su actor base: para caducar
+// se recorren solo los propios de cada documento, o se retiraría dos veces el mismo efecto.
+// La colección de efectos del delta también incluye los heredados; sus datos fuente, solo los propios.
+const ownsEffect = (actor, id) => {
+  if (!actor?.isToken) return true;
+  const own = actor.token?.delta?._source?.effects;
+  return Array.isArray(own) ? own.some((e) => e._id === id) : !actor.token?.baseActor?.effects.has(id);
+};
+const ownCarriers = (actor) => carriersOf(actor).filter((e) => ownsEffect(actor, e.id));
 
 async function expireDue() {
   for (const actor of carrierActors()) {
-    for (const effect of carriersOf(actor)) {
+    for (const effect of ownCarriers(actor)) {
       const remaining = effect.duration?.remaining;
       if (typeof remaining === "number" && remaining <= 0) await expireCarrier(effect);
     }
@@ -259,6 +273,34 @@ const OPS = {
     await c.update({ initiative: best + 1 });
   },
 
+  humanity: async (target, op, ctx) => {
+    const roll = await new Roll(String(op.formula)).evaluate();
+    const hum = target.system.derivedStats?.humanity;
+    if (!hum) return;
+    const loss = op.sign === "loss";
+    let value = (Number.isInteger(hum.value) ? hum.value : hum.max) + (loss ? -roll.total : roll.total);
+    if (!loss && op.respectMax !== false) value = Math.min(value, hum.max);
+    const sentence = L(loss ? "effects.humanityLossLedger" : "effects.humanityGainLedger", { amount: roll.total, total: value });
+    // Registro nativo de RED (derivedStats.humanity.transactions); la Humanidad máxima no cambia.
+    await target.update({
+      "system.derivedStats.humanity.value": value,
+      "system.derivedStats.humanity.transactions": [...(hum.transactions ?? []), [sentence, ctx.label]],
+    });
+    await target.setMaxHumanity?.();
+    if (loss) ctx.lastHumanityLoss = roll.total;
+    const note = value <= 0 ? `<p><strong>${L("effects.cyberpsychosis", { actor: esc(target.name) })}</strong></p>` : "";
+    await chat(target, `<p>${L(loss ? "effects.humanityLoss" : "effects.humanityGain", { name: esc(ctx.label), actor: esc(target.name), amount: roll.total, total: value })}</p>${note}`, { rolls: [roll] });
+  },
+
+  // Con Humanidad negativa, daño directo igual a la pérdida de la operación `humanity` anterior.
+  "self-damage-from-humanity": async (target, op, ctx) => {
+    const value = target.system.derivedStats?.humanity?.value ?? 0;
+    if (value < 0 && ctx.lastHumanityLoss) await directDamage(target, String(ctx.lastHumanityLoss), ctx.label);
+  },
+
+  "ignore-wound-state": (target, op, ctx) =>
+    createCarrier(target, ctx, { duration: op.duration, timed: { ignoreWound: { states: op.states ?? ["seriouslyWounded", "mortallyWounded"], keepDeathSaves: op.keepDeathSaves !== false } }, img: "icons/svg/regen.svg" }),
+
   "extra-action": async (target, op) => {
     const c = combatantOf(target);
     if (!c) return;
@@ -271,7 +313,7 @@ const OPS = {
  * Aplica una lista de operaciones al objetivo (en el cliente del DJ).
  * @param {object} data - { sourceUuid, sourceActorUuid, sourceName, targetUuid, label, operations, picks, gmConfirm }
  */
-async function applyOperations(data) {
+export async function applyOperations(data) {
   const target = resolveActor(data.targetUuid);
   if (!target) return;
   if (data.gmConfirm) {
@@ -323,9 +365,9 @@ export function registerEffectHooks() {
       }
     }
     for (const actor of carrierActors()) {
-      for (const effect of carriersOf(actor)) {
+      for (const effect of ownCarriers(actor)) {
         const t = effect.flags[MODULE_ID].timed;
-        const ended = (t.untilEndOfTurn === "target" && actor === prev) || (t.untilEndOfTurn === "self" && prev && resolveActor(t.sourceActor ?? "") === prev);
+        const ended = (t.untilEndOfTurn === "target" && sameActor(actor, prev)) || (t.untilEndOfTurn === "self" && prev && sameActor(resolveActor(t.sourceActor ?? ""), prev));
         if (ended && actor.effects.has(effect.id)) await expireCarrier(effect);
       }
     }

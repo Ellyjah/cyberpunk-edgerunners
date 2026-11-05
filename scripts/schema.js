@@ -23,15 +23,23 @@ const OPERATIONS = {
   "initiative-top": {},
   "extra-action": { kind: "enum:move|any", count: "int" },
   "self-damage-from-humanity": {},
+  "ignore-wound-state": { states: "list", keepDeathSaves: "bool", duration: "duration" },
 };
 
 const CONDITIONS = {
   actorHasCapability: { capability: "string!", installed: "bool" },
-  statAtLeast: { stat: "string!", value: "int!" },
+  statAtLeast: { stat: "string!", value: "int!", scope: "string" },
   roleRankAtLeast: { role: "string!", rank: "int!" },
   targetUnaware: {},
   connected: { mode: "enum:any|remote|cable" },
+  // Ampliaciones compatibles de v1 (M5).
+  actorHasTag: { tag: "string!" },
+  actorHasCyberwareType: { cyberwareType: "string!", foundational: "bool" },
+  anyOf: { conditions: "conditions!" },
+  allOf: { conditions: "conditions!" },
 };
+
+const ANY_HOST = ["cyberware", "weapon", "itemUpgrade", "gear", "cyberdeck", "ammo", "armor", "clothing", "drug", "program"];
 
 // Tipo de capacidad → { hosts: tipos de Item de RED, params }.
 export const CAPABILITIES = {
@@ -47,9 +55,11 @@ export const CAPABILITIES = {
     hosts: ["cyberware"],
     params: { action: "enum:none|action", humanityCost: "formula", duration: "duration", cooldown: "duration", exclusiveGroup: "string", onActivate: "operations" },
   },
-  "effective-stat": { hosts: ["cyberware"], params: { stat: "string!", value: "int!", scope: "list" } },
+  "effective-stat": { hosts: ["cyberware"], params: { stat: "string!", value: "int!", scope: "list", stackKey: "string", minStack: "int" } },
   "crit-choose": { hosts: ["cyberware", "weapon"], params: { rolls: "int" } },
   "ignore-wound-state": { hosts: ["cyberware"], params: { states: "list", keepDeathSaves: "bool" } },
+  // Marca genérica para condiciones (`actorHasTag`), sin efecto propio.
+  tag: { hosts: ANY_HOST, params: { tags: "list!" } },
   quickhack: {
     hosts: ["gear"],
     params: { minRank: "int!", dv: "int!", alerts: "bool", requiresUnaware: "bool", operations: "operations" },
@@ -59,7 +69,8 @@ export const CAPABILITIES = {
   ricochet: { hosts: ["weapon", "itemUpgrade"], params: { attackMod: "int", aimedIgnoresMod: "bool", spreadRadius: "number" } },
   "smart-weapon": { hosts: ["weapon", "itemUpgrade"], params: {} },
   "enhanced-smart-ammo": { hosts: ["ammo"], params: { retry: "object", ignoreVisibility: "bool" } },
-  chargeable: { hosts: ["weapon", "itemUpgrade"], params: { chargeCost: "enum:move|none", duration: "duration", whileCharged: "object" } },
+  chargeable: { hosts: ["weapon", "itemUpgrade"], params: { chargeCost: "enum:move|none", duration: "duration", whileCharged: "object", release: "enum:fire|endOfTurn" } },
+  "mode-damage": { hosts: ["weapon", "itemUpgrade"], params: { modes: "list!", damage: "formula!" } },
   "ammo-per-attack": { hosts: ["weapon"], params: { count: "int!", modes: "list", ifInsufficient: "object" } },
   "min-ammo-to-fire": { hosts: ["weapon"], params: { count: "int!" } },
   "multi-chamber": { hosts: ["weapon"], params: { chambers: "int!" } },
@@ -105,6 +116,10 @@ function checkKind(kind, value, path, out) {
     case "condition":
       checkEntry(CONDITIONS, "type", value, path, out, "unknownCondition");
       return isObj(value);
+    case "conditions":
+      if (!Array.isArray(value)) return false;
+      value.forEach((c, i) => checkEntry(CONDITIONS, "type", c, `${path}[${i}]`, out, "unknownCondition"));
+      return true;
     default: return false;
   }
 }
