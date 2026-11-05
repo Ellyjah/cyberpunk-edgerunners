@@ -13,13 +13,16 @@ export const esc = (s) => Handlebars.escapeExpression(String(s ?? ""));
 
 // Cada manejador recibe (datos, userId). El userId lo añade el servidor de Foundry al reenviar el
 // mensaje: es la identidad real del remitente. Los datos del cliente nunca se dan por buenos.
-const HANDLERS = {};
+// Registros sin prototipo: un nombre como "constructor" o "__proto__" no encuentra nada heredado (A050-01).
+const HANDLERS = Object.create(null);
+/** Valor registrado con esa clave propia (nunca uno heredado). */
+export const own = (registry, key) => (typeof key === "string" && Object.hasOwn(registry, key) ? registry[key] : undefined);
 export const registerHandler = (name, fn) => { HANDLERS[name] = fn; };
 const isActiveGM = () => game.user === game.users.activeGM;
 
 /** Ejecuta un manejador en el cliente del DJ activo (localmente si este cliente lo es). */
 export async function gmExec(name, data) {
-  if (isActiveGM()) return HANDLERS[name](data, game.user.id);
+  if (isActiveGM()) return own(HANDLERS, name)?.(data, game.user.id);
   if (!game.users.activeGM) return ui.notifications.error(L("net.noGM"));
   game.socket.emit(`module.${MODULE_ID}`, { name, data });
 }
@@ -27,7 +30,7 @@ export async function gmExec(name, data) {
 export function listenSocket() {
   game.socket.on(`module.${MODULE_ID}`, async (message, userId) => {
     if (!isActiveGM() || typeof userId !== "string" || !game.users.get(userId)) return;
-    const fn = HANDLERS[message?.name];
+    const fn = own(HANDLERS, message?.name);
     if (!fn) return;
     try { await fn(message.data ?? {}, userId); } catch (err) { console.error(`${MODULE_ID} |`, err); }
   });
@@ -45,13 +48,13 @@ export function denied(user, what, reason = "") {
 // Solicitudes de operaciones: el cliente pide una acción tipada y el DJ obtiene las operaciones de los
 // datos del propio Item tras comprobar quién lo pide y su contexto. Si el contexto no se puede comprobar,
 // decide el DJ; si la solicitud no es válida, se rechaza.
-const REQUESTS = {};
+const REQUESTS = Object.create(null);
 export const registerRequest = (kind, fn) => { REQUESTS[kind] = fn; };
 export const requestOperations = (kind, data) => gmExec("requestOperations", { ...data, kind });
 
 registerHandler("requestOperations", async (data, userId) => {
   const user = game.users.get(userId);
-  const resolver = REQUESTS[data?.kind];
+  const resolver = own(REQUESTS, data?.kind);
   if (!user || !resolver) return denied(user, data?.kind, "kind");
   let result;
   try { result = await resolver(data, user); } catch (err) { result = { reason: err.message }; }
@@ -197,6 +200,45 @@ async function cleanupCarrier(actor, effectId, timed) {
   }
 }
 
+/**
+ * Un portador desactivado (casilla nativa o desactivación del módulo) deja de actuar y al reactivarse
+ * vuelve a hacerlo (A050-02): sus estados se retiran o se reponen; sus Items temporales se guardan en el
+ * propio portador y se recrean; las suspensiones de implantes solo cuentan con el portador activo
+ * (isSuspended) y el daño periódico, el fin por daño y las operaciones diferidas lo ignoran.
+ */
+async function syncCarrierState(actor, effect, active) {
+  const t = effect.flags[MODULE_ID].timed;
+  const path = `flags.${MODULE_ID}.timed`;
+  const steps = [];
+  if (active) {
+    // Un estado que ahora sostiene otra procedencia deja de reclamarse: nunca se le retirará.
+    const statuses = t.statuses ?? [];
+    const keep = statuses.filter((s) => !actor.statuses?.has(s) || statusHeldElsewhere(actor, s, effect.id));
+    for (const s of keep) steps.push(() => (!actor.statuses?.has(s) ? actor.toggleStatusEffect(s, { active: true }) : null));
+    if (keep.length !== statuses.length) steps.push(() => effect.update({ [`${path}.statuses`]: keep }));
+    if (t.parkedItems?.length) {
+      steps.push(async () => {
+        const created = await actor.createEmbeddedDocuments("Item", t.parkedItems.map(({ _id, ...data }) => data));
+        await effect.update({ [`${path}.createdItems`]: (created ?? []).map((i) => i.id), [`${path}.-=parkedItems`]: null });
+      });
+    }
+  } else {
+    for (const s of t.statuses ?? []) {
+      steps.push(() => (!statusHeldElsewhere(actor, s, effect.id) && actor.statuses?.has(s) ? actor.toggleStatusEffect(s, { active: false }) : null));
+    }
+    const items = (t.createdItems ?? []).map((id) => actor.items.get(id)).filter(Boolean);
+    if (items.length) {
+      steps.push(async () => {
+        await effect.update({ [`${path}.parkedItems`]: items.map((i) => i.toObject()), [`${path}.createdItems`]: [] });
+        await actor.deleteEmbeddedDocuments("Item", items.map((i) => i.id));
+      });
+    }
+  }
+  for (const step of steps) {
+    try { await step(); } catch (err) { console.error(`${MODULE_ID} |`, err); }
+  }
+}
+
 /** Retira un portador y todo lo que creó (Items temporales, estados, suspensiones). */
 export async function expireCarrier(effect) {
   const actor = effect.parent;
@@ -205,8 +247,9 @@ export async function expireCarrier(effect) {
   try {
     const timed = effect.flags[MODULE_ID]?.timed ?? {};
     const steps = [() => cleanupCarrier(actor, effect.id, timed)];
-    // Operaciones diferidas (`on-expire`): se aplican al caducar, no si alguien retira el efecto a mano.
-    if (timed.onExpire?.operations?.length) {
+    // Operaciones diferidas (`on-expire`): se aplican al caducar, no si alguien retira el efecto a mano
+    // ni si el portador estaba desactivado.
+    if (timed.onExpire?.operations?.length && !effect.disabled) {
       steps.push(() => applyOperations({ targetUuid: actor.uuid, sourceUuid: timed.source, sourceActorUuid: timed.sourceActor, label: effect.name, operations: timed.onExpire.operations }));
     }
     for (const handler of expireHandlers) steps.push(() => handler(actor, effect, timed));
@@ -322,7 +365,7 @@ async function applyHumanityRoll(target, op, ctx, roll) {
   await chat(target, `<p>${L(loss ? "effects.humanityLoss" : "effects.humanityGain", { name: esc(ctx.label), actor: esc(target.name), amount, total: value })}</p>${note}`, { rolls: [roll] });
 }
 
-const OPS = {
+const OPS = Object.assign(Object.create(null), {
   "stat-mod": (target, op, ctx) => createCarrier(target, ctx, { changes: [{ key: op.key, mode: 2, value: String(op.value) }], duration: op.duration }),
 
   "move-mod": async (target, op, ctx) => {
@@ -431,7 +474,7 @@ const OPS = {
       return c.setFlag(MODULE_ID, "turn", { ...turn, extra: turn.extra + (op.count ?? 1) });
     });
   },
-};
+});
 
 /**
  * Aplica una lista de operaciones al objetivo (en el cliente del DJ).
@@ -446,9 +489,9 @@ export async function applyOperations(data) {
   }
   const ctx = { ...(data.context ?? {}), label: data.label, sourceUuid: data.sourceUuid, sourceActorUuid: data.sourceActorUuid, sourceName: data.sourceName };
   for (const [i, op] of (data.operations ?? []).entries()) {
-    const fn = OPS[op.op];
+    const fn = own(OPS, op?.op);
     if (!fn) {
-      ui.notifications.warn(L("effects.notImplemented", { op: op.op }));
+      ui.notifications.warn(L("effects.notImplemented", { op: String(op?.op) }));
       continue;
     }
     await fn(target, op, ctx, data.picks?.[i]);
@@ -463,7 +506,8 @@ export async function applyOperations(data) {
 function isSuspended(item) {
   for (let depth = 0; item && depth < 10; depth++) {
     if (item.documentName !== "Item") return false;
-    if (item.flags?.[MODULE_ID]?.suspendedBy?.length) return true;
+    // Solo suspende un portador que siga existiendo y esté activo (A050-02).
+    if (item.flags?.[MODULE_ID]?.suspendedBy?.some((id) => { const e = item.actor?.effects.get(id); return e && !e.disabled; })) return true;
     const parentId = item.system?.installedIn?.[0];
     item = parentId && parentId !== item.actor?.id ? item.actor?.items.get(parentId) : null;
   }
@@ -483,7 +527,7 @@ export function registerEffectHooks() {
     if (prev) {
       for (const effect of carriersOf(prev)) {
         const t = effect.flags[MODULE_ID].timed;
-        if (t.periodic) {
+        if (t.periodic && !effect.disabled) {
           await directDamage(prev, t.periodic.formula, effect.name);
           if (!t.periodic.repeat) await expireCarrier(effect);
         }
@@ -513,6 +557,31 @@ export function registerEffectHooks() {
     cleaned.delete(key);
   });
 
+  // Casilla nativa de desactivar/activar un portador (A050-02). La suspensión de implantes se recalcula
+  // en cada cliente; los cambios de estado e Items los hace el DJ.
+  Hooks.on("updateActiveEffect", async (effect, changes, options) => {
+    const t = effect.flags?.[MODULE_ID]?.timed;
+    const actor = effect.parent;
+    if (!t || !("disabled" in changes) || actor?.documentName !== "Actor") return;
+    if (t.suspended?.length) actor.reset();
+    if (!isActiveGM() || options.er2070Sync || !ownsEffect(actor, effect.id) || !actor.effects.has(effect.id)) return;
+    await serialize(`carrier:${effect.uuid}`, () => syncCarrierState(actor, effect, !effect.disabled));
+  });
+
+  // Desactivar el módulo desde su gestor: los portadores se suspenden ANTES de guardar el ajuste y de
+  // mostrar el diálogo de recarga, que Foundry no espera (A050-03). Si el cambio no se guarda, se restauran.
+  libWrapper.register(MODULE_ID, "ModuleManagement.prototype._updateObject", async function (wrapped, event, formData) {
+    const enabled = () => game.settings.get("core", "moduleConfiguration")?.[MODULE_ID] !== false;
+    const disabling = game.user.isGM && formData?.[MODULE_ID] === false && enabled();
+    if (disabling) {
+      ui.notifications.info(L("security.suspending"));
+      await suspendAllCarriers();
+    }
+    const result = await wrapped(event, formData);
+    if (disabling && enabled()) await restoreSuspendedCarriers();
+    return result;
+  }, "WRAPPER");
+
   // Si se borra el Item que origina un portador (arma cargada, implante, droga), el portador se retira.
   Hooks.on("deleteItem", async (item) => {
     const actor = item.parent;
@@ -537,7 +606,7 @@ export function registerEffectHooks() {
     if (!isActiveGM() || options.er2070Hp === undefined) return;
     const hp = foundry.utils.getProperty(changes, "system.derivedStats.hp.value");
     if (hp === undefined || hp >= options.er2070Hp) return;
-    for (const effect of carriersOf(actor)) if (effect.flags[MODULE_ID].timed.endsOnDamage) await expireCarrier(effect);
+    for (const effect of carriersOf(actor)) if (effect.flags[MODULE_ID].timed.endsOnDamage && !effect.disabled) await expireCarrier(effect);
   });
 }
 
@@ -549,38 +618,30 @@ export function registerEffectHooks() {
  * al desactivar el módulo; también está en la API para usarlo antes de desinstalarlo.
  */
 export async function suspendAllCarriers() {
-  let count = 0;
-  for (const actor of carrierActors(true)) {
-    for (const effect of ownCarriers(actor)) {
-      const t = effect.flags[MODULE_ID].timed;
-      if (effect.disabled || t.suspendedByDisable) continue;
-      try {
-        await effect.update({ disabled: true, [`flags.${MODULE_ID}.timed.suspendedByDisable`]: true });
-        for (const status of t.statuses ?? []) {
-          if (!statusHeldElsewhere(actor, status, effect.id) && actor.statuses?.has(status)) await actor.toggleStatusEffect(status, { active: false });
-        }
-        count += 1;
-      } catch (err) { console.error(`${MODULE_ID} |`, err); }
-    }
-  }
-  if (count) ui.notifications.info(L("security.suspendedAll", { count }));
-  return count;
+  return eachCarrier((effect) => !effect.disabled && !effect.flags[MODULE_ID].timed.suspendedByDisable, async (actor, effect) => {
+    await effect.update({ disabled: true, [`flags.${MODULE_ID}.timed.suspendedByDisable`]: true }, { er2070Sync: true });
+    await syncCarrierState(actor, effect, false);
+  }, "security.suspendedAll");
 }
 
 /** Restaura los portadores suspendidos al desactivar el módulo (al arrancar con el módulo activo). */
 export async function restoreSuspendedCarriers() {
-  let count = 0;
-  for (const actor of carrierActors(true)) {
-    for (const effect of ownCarriers(actor)) {
-      const t = effect.flags[MODULE_ID].timed;
-      if (!t.suspendedByDisable) continue;
-      try {
-        await effect.update({ disabled: false, [`flags.${MODULE_ID}.timed.-=suspendedByDisable`]: null });
-        for (const status of t.statuses ?? []) if (!actor.statuses?.has(status)) await actor.toggleStatusEffect(status, { active: true });
-        count += 1;
-      } catch (err) { console.error(`${MODULE_ID} |`, err); }
+  return eachCarrier((effect) => effect.flags[MODULE_ID].timed.suspendedByDisable, async (actor, effect) => {
+    await effect.update({ disabled: false, [`flags.${MODULE_ID}.timed.-=suspendedByDisable`]: null }, { er2070Sync: true });
+    await syncCarrierState(actor, effect, true);
+  }, "security.restoredAll");
+}
+
+/** Aplica `fn` a los portadores que cumplen `test`: los actores en paralelo y, dentro de cada uno, en serie. */
+async function eachCarrier(test, fn, notice) {
+  const counts = await Promise.all(carrierActors(true).map(async (actor) => {
+    let n = 0;
+    for (const effect of ownCarriers(actor).filter(test)) {
+      try { await fn(actor, effect); n += 1; } catch (err) { console.error(`${MODULE_ID} |`, err); }
     }
-  }
-  if (count) ui.notifications.info(L("security.restoredAll", { count }));
+    return n;
+  }));
+  const count = counts.reduce((a, b) => a + b, 0);
+  if (count) ui.notifications.info(L(notice, { count }));
   return count;
 }

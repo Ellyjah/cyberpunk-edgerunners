@@ -90,8 +90,11 @@
         "hint": "Multiplier proposed when configuring a shop as an authorized dealer. It only affects buying, not reselling."
       },
       "theme2070": {
-        "name": "2070 theme (Mission Kit sheets)",
-        "hint": "Applies to every player the yellow and green palette and the fonts inspired by the Mission Kit character sheets, on RED sheets, dialogs and chat cards and on the module consoles. It does not change the sheet layout. Only the GM can change it."
+        "name": "Sheet style",
+        "hint": "Style of RED sheets, dialogs and chat cards and of the module consoles, for every player. The 2070 sheet uses the yellow and green palette and fonts inspired by the Mission Kit character sheets, and follows the light or dark mode chosen in RED; the light 2070 sheet keeps the light background even with dark mode. It does not change the sheet layout. Only the GM can change it.",
+        "original": "Keep original sheet",
+        "er2070": "2070 sheet",
+        "er2070-light": "Light 2070 sheet"
       }
     },
     "net": {
@@ -342,6 +345,7 @@
       "confirmUnverified": "{user} requests “{name}” on {actor}, but the module could not verify the context ({reason}). Apply?",
       "confirmInjury": "{user} chooses the critical injury {injury} for {actor}. Apply it?",
       "noContext": "no full connection to the target or insufficient rank",
+      "suspending": "Suspending the module's temporary effects before disabling it…",
       "suspendedAll": "Edgerunners 2070: {count} module effect(s) suspended on deactivation.",
       "restoredAll": "Edgerunners 2070: {count} module effect(s) restored."
     }

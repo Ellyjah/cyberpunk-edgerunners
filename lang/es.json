@@ -90,8 +90,11 @@
         "hint": "Multiplicador que se propone al configurar una tienda como distribuidor autorizado. Solo afecta a la compra, no a la reventa."
       },
       "theme2070": {
-        "name": "Tema 2070 (hojas del Mission Kit)",
-        "hint": "Aplica a todos los jugadores la paleta amarillo y verde y las fuentes inspiradas en las hojas de personaje del Mission Kit, en las fichas, diálogos y tarjetas de RED y en las consolas del módulo. No cambia la distribución de las hojas. Solo el DJ puede cambiarlo."
+        "name": "Estilo de hoja",
+        "hint": "Estilo de las fichas, diálogos y tarjetas de RED y de las consolas del módulo para todos los jugadores. La hoja 2070 usa la paleta amarillo y verde y fuentes inspiradas en las hojas de personaje del Mission Kit, y sigue el modo claro u oscuro elegido en RED; la hoja 2070 clara mantiene el fondo claro aunque se use el modo oscuro. No cambia la distribución de las hojas. Solo el DJ puede cambiarlo.",
+        "original": "Mantener hoja original",
+        "er2070": "Hoja 2070",
+        "er2070-light": "Hoja 2070 clara"
       }
     },
     "net": {
@@ -342,6 +345,7 @@
       "confirmUnverified": "{user} solicita «{name}» sobre {actor}, pero el módulo no ha podido comprobar el contexto ({reason}). ¿Aplicar?",
       "confirmInjury": "{user} elige la herida crítica {injury} para {actor}. ¿Aplicarla?",
       "noContext": "sin conexión completa con el objetivo o rango insuficiente",
+      "suspending": "Suspendiendo los efectos temporales del módulo antes de desactivarlo…",
       "suspendedAll": "Edgerunners 2070: {count} efecto(s) del módulo suspendido(s) al desactivarlo.",
       "restoredAll": "Edgerunners 2070: {count} efecto(s) del módulo restaurado(s)."
     }

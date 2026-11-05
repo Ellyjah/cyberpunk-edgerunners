@@ -52,7 +52,7 @@ const smartOk = (cap, actor) => conditionsMet(cap.requires?.length ? cap.require
 
 const chargeOf = (actor, item) => carriersOf(actor).find((e) => timed(e).charge?.itemId === item.id);
 const activationOf = (actor, item) => carriersOf(actor).find((e) => timed(e).activation?.itemId === item.id);
-const cooldownOf = (actor, item) => carriersOf(actor).find((e) => timed(e).cooldown?.itemId === item.id);
+const cooldownOf = (actor, item) => carriersOf(actor).find((e) => !e.disabled && timed(e).cooldown?.itemId === item.id);
 // En un token no vinculado, un efecto heredado se modifica en el actor base que lo contiene.
 const realEffect = (actor, effect) => (effect && actor.isToken && actor.token?.baseActor?.effects.get(effect.id)) || effect;
 
@@ -118,7 +118,7 @@ function prepareAttack(item, actor, roll, caps, state) {
   }
 
   const chargeCap = find(active, "chargeable");
-  const whileCharged = chargeCap && chargeOf(actor, item) ? chargeCap.whileCharged ?? {} : null;
+  const whileCharged = chargeCap && chargeOf(actor, item) && !chargeOf(actor, item).disabled ? chargeCap.whileCharged ?? {} : null;
   const perAttack = whileCharged?.ammoPerAttack
     ? { count: whileCharged.ammoPerAttack, ifInsufficient: { consumeAll: true } }
     : find(active, "ammo-per-attack") ?? null;
@@ -516,7 +516,7 @@ async function activate(actor, item, cap) {
   const name = item.name;
   if (activationOf(actor, item)) return ui.notifications.warn(L("gear.alreadyActive", { name }));
   if (cooldownOf(actor, item)) return ui.notifications.warn(L("gear.onCooldown", { name }));
-  if (cap.exclusiveGroup && carriersOf(actor).some((e) => timed(e).activation?.group === cap.exclusiveGroup)) return ui.notifications.warn(L("gear.exclusiveActive", { name }));
+  if (cap.exclusiveGroup && carriersOf(actor).some((e) => !e.disabled && timed(e).activation?.group === cap.exclusiveGroup)) return ui.notifications.warn(L("gear.exclusiveActive", { name }));
   if (!conditionsMet(cap.requires, actor)) return ui.notifications.warn(L("gear.requiresUnmet", { name }));
   const ctx = { label: name, sourceUuid: item.uuid, sourceActorUuid: actor.uuid };
   const activation = { itemId: item.id, name, group: cap.exclusiveGroup ?? null, cooldown: cap.cooldown ?? null };
@@ -736,7 +736,7 @@ function onWoundStateMods(wrapped, ...args) {
   const mod = wrapped(...args);
   if (!mod) return mod;
   const state = this.getWoundState();
-  const fromEffects = carriersOf(this).some((e) => timed(e).ignoreWound?.states?.includes(state));
+  const fromEffects = carriersOf(this).some((e) => !e.disabled && timed(e).ignoreWound?.states?.includes(state));
   const fromCyberware = actorCapabilities(this, "ignore-wound-state").some((c) => (c.states?.length ? c.states : WOUND_STATES).includes(state));
   return fromEffects || fromCyberware ? 0 : mod;
 }

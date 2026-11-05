@@ -55,23 +55,35 @@ Hooks.once("init", () => {
       requiresReload: false,
     });
   }
-  // Tema 2070: lo decide el DJ (ajuste de mundo) y se aplica al momento en todos los clientes.
+  // Estilo de hoja: lo decide el DJ (ajuste de mundo) y se aplica al momento en todos los clientes.
   game.settings.register(MODULE_ID, "theme2070", {
     name: "EDGERUNNERS2070.settings.theme2070.name",
     hint: "EDGERUNNERS2070.settings.theme2070.hint",
     scope: "world",
     config: true,
-    type: Boolean,
-    default: false,
+    type: String,
+    choices: Object.fromEntries(THEMES.map((t) => [t, `EDGERUNNERS2070.settings.theme2070.${t}`])),
+    default: "original",
     requiresReload: false,
     onChange: applyTheme,
   });
   game.modules.get(MODULE_ID).api = { schemaVersion: SCHEMA_VERSION, validate, migrate, getCapabilities, suspendAllCarriers, restoreSuspendedCarriers };
 });
 
-/** Activa o desactiva el tema 2070 (clase en <html>; el CSS solo actúa con ella). */
-function applyTheme(enabled) {
-  document.documentElement.classList.toggle("er2070-theme", Boolean(enabled));
+/**
+ * Estilos de hoja: la original de RED, la 2070 (sigue el modo claro u oscuro de RED) y la 2070 clara
+ * (fondo claro aunque RED esté en modo oscuro). El valor de la antigua casilla (0.5.0) se interpreta:
+ * activada era la hoja clara.
+ */
+// Claves no numéricas: así el desplegable conserva este orden.
+const THEMES = ["original", "er2070", "er2070-light"];
+const themeValue = (v) => (v === true || v === "true" ? "er2070-light" : THEMES.includes(v) ? v : "original");
+
+/** Aplica el estilo con clases en <html>; el CSS solo actúa con ellas. */
+function applyTheme(value) {
+  const theme = themeValue(value);
+  document.documentElement.classList.toggle("er2070-theme", theme !== "original");
+  document.documentElement.classList.toggle("er2070-light", theme === "er2070-light");
 }
 
 // Los envoltorios de libWrapper se registran cuando RED ya ha configurado sus clases.
@@ -87,7 +99,12 @@ Hooks.once("ready", () => {
   if (game.system.id !== RED_ID) return;
   listenSocket();
   // Efectos suspendidos al desactivar el módulo: se restauran al volver a activarlo (R05).
-  if (game.user === game.users.activeGM) restoreSuspendedCarriers();
+  if (game.user === game.users.activeGM) {
+    restoreSuspendedCarriers();
+    // Valor de la casilla de 0.5.0: se guarda como opción del desplegable.
+    const theme = game.settings.get(MODULE_ID, "theme2070");
+    if (!THEMES.includes(theme)) game.settings.set(MODULE_ID, "theme2070", themeValue(theme));
+  }
 });
 
 /** Traduce un mensaje de validación. */

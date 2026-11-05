@@ -67,7 +67,8 @@ expireHandlers.push(async (actor, effect, t) => {
     await item.updateEmbeddedDocuments("ActiveEffect", item.effects.map((ae) => ({ _id: ae.id, disabled: true })));
   }
   const sec = drug.secondary;
-  if (!sec?.dv) return;
+  // Un portador desactivado no aplica el efecto secundario (A050-02).
+  if (!sec?.dv || effect.disabled) return;
   const skillName = sec.skill ?? "Resist Torture/Drugs";
   const skill = actor.items.find((i) => i.type === "skill" && i.name === skillName);
   const statKey = skill?.system.stat ?? "will";

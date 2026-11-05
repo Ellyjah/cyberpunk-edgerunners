@@ -1,7 +1,9 @@
 /*
  * Tema 2070 (opcional): paleta y tipografía inspiradas en las hojas de personaje del
  * Mission Kit, con colores propios y fuentes libres (SIL OFL 1.1, ver fonts/).
- * Solo actúa con la clase `er2070-theme` en <html>, que el DJ activa desde los ajustes.
+ * Solo actúa con la clase `er2070-theme` en <html>, según el ajuste «Estilo de hoja» del DJ:
+ *   - «Hoja 2070»: paleta clara, u oscura si RED está en modo oscuro;
+ *   - «Hoja 2070 clara» (clase `er2070-light`): paleta clara también con el modo oscuro de RED.
  * No cambia tamaños, márgenes ni distribución de RED: solo variables de color, fondos
  * (degradados) y familias tipográficas con métricas verticales iguales a las de Jost.
  */
@@ -19,7 +21,7 @@
 @font-face { font-family: "ER2070 Saira Hero"; src: url("../fonts/SairaCondensed-Bold.ttf") format("truetype"); font-weight: 700 900; font-style: normal; ascent-override: 94%; descent-override: 25%; line-gap-override: 0%; }
 
 /* ------------------------------------------------------------------ paleta */
-/* Se fuerza la hoja clara también con el modo oscuro de RED (decisión del director). */
+/* Paleta clara: modo claro de RED u «Hoja 2070 clara». La oscura la sustituye más abajo. */
 html.er2070-theme,
 html.er2070-theme[data-cpr-theme] {
   --er2070-yellow: #f4e300;
@@ -30,6 +32,8 @@ html.er2070-theme[data-cpr-theme] {
   --er2070-white: #ffffff;
   --er2070-grey: #f2f2f2;
   --er2070-gradient: linear-gradient(100deg, var(--er2070-green) 0%, var(--er2070-lime) 45%, var(--er2070-yellow) 100%);
+  /* Fondo de los paneles enmarcados (en la paleta oscura, degradado en tonos oscuros). */
+  --er2070-panel: var(--er2070-gradient);
 
   --cpr-font-primary: "ER2070 Rajdhani", "Jost", sans-serif;
   --cpr-font-hero: "ER2070 Saira Hero", "Rubik", sans-serif;
@@ -93,6 +97,10 @@ html.er2070-theme[data-cpr-theme] {
   --cpr-text-chat-failure: #b90202;
   --cpr-text-chat-success: var(--er2070-green-dark);
   --cpr-text-mook-normal: var(--cpr-color-near-black);
+  /* Rótulos de PNJ y demonio sobre el degradado claro: negro (A050-04). */
+  --cpr-text-mook-header: var(--er2070-black);
+  --cpr-text-mook-name: var(--er2070-black);
+  --er2070-text-panel: var(--er2070-black);
   --cpr-text-foundry-input: var(--er2070-black);
   --cpr-text-foundry-hint: var(--cpr-color-near-black);
   --cpr-text-foundry-hover: var(--er2070-green-dark);
@@ -103,8 +111,85 @@ html.er2070-theme[data-cpr-theme] {
   --cpr-icon-actor-image-overlay: var(--er2070-white);
   --cpr-icon-actor-image-overlay-border: var(--er2070-green);
 }
-/* El modo oscuro de RED también cambia estas variables de Foundry: se devuelven a las del modo claro. */
-html.er2070-theme[data-cpr-theme="darkmode"] {
+/* Paleta oscura: «Hoja 2070» con el modo oscuro de RED. Redefine todo lo que fija la clara. */
+html.er2070-theme:not(.er2070-light)[data-cpr-theme="darkmode"] {
+  --er2070-dark-bg: #141414;
+  --er2070-dark-row: #262626;
+  --er2070-dark-raised: #2b2b2b;
+  --er2070-dark-text: #ececec;
+  --er2070-panel: linear-gradient(100deg, #24520f 0%, #47560a 45%, #5c5400 100%);
+  --er2070-text-panel: var(--er2070-dark-text);
+
+  --cpr-color-black: #000000;
+  --cpr-color-near-black: #0d0b0c;
+  --cpr-color-off-black: #1a1a1a;
+  --cpr-color-white: var(--er2070-dark-text);
+  --cpr-color-pink: var(--er2070-dark-row);
+  --cpr-color-red: var(--er2070-lime);
+
+  --cpr-background-window: var(--er2070-dark-bg);
+  --cpr-background-box: var(--er2070-dark-bg);
+  --cpr-background-border: #47560a;
+  --cpr-background-header: var(--er2070-black);
+  --cpr-background-pill: var(--er2070-black);
+  --cpr-background-row-even: var(--er2070-dark-row);
+  --cpr-background-row-odd: var(--er2070-dark-bg);
+  --cpr-background-tab-active: var(--er2070-green);
+  --cpr-background-tab-inactive: var(--er2070-black);
+  --cpr-background-tab-underlay: var(--er2070-dark-row);
+  --cpr-background-code: var(--er2070-dark-raised);
+  --cpr-background-content-link: var(--er2070-dark-raised);
+  --cpr-background-chat-card: var(--er2070-dark-bg);
+  --cpr-background-chat-card-block: var(--er2070-black);
+  --cpr-background-chat-card-block-before: var(--er2070-dark-raised);
+  --cpr-background-chat-border: #666666;
+  --cpr-background-foundry-input: var(--er2070-dark-raised);
+  --cpr-background-foundry-hover: var(--er2070-green-dark);
+  --cpr-background-editor-button: #656a6a;
+  --cpr-background-editor-button-selected: #444444;
+  --cpr-background-editor-button-hover: #3e4242;
+  --cpr-background-editor-button-active: #3e4242;
+  --cpr-background-editor-header: var(--er2070-black);
+  --cpr-background-cyberdeck-section-header: #3a3f12;
+  --cpr-background-dialog-border: var(--er2070-green-dark);
+  --cpr-background-dialog-selected: rgba(182, 207, 24, 0.3);
+  --cpr-background-dialog-hr-gradient-start: var(--er2070-green);
+  --cpr-background-dialog-hr-gradient-middle: var(--er2070-lime);
+  --cpr-background-dialog-hr-gradient-end: var(--er2070-yellow);
+  --cpr-background-journal-blockquote: var(--er2070-dark-row);
+  --cpr-background-toggle-checked: var(--er2070-green);
+  --cpr-background-toggle-unchecked: #444444;
+
+  --cpr-text-normal: var(--er2070-dark-text);
+  --cpr-text-window: var(--er2070-dark-text);
+  --cpr-text-header: var(--er2070-dark-text);
+  --cpr-text-header-line: var(--er2070-lime);
+  --cpr-text-header-line-box: #c0c0c5;
+  --cpr-text-header-arrow: var(--er2070-lime);
+  --cpr-text-pill: var(--er2070-dark-text);
+  --cpr-text-tab-normal: var(--er2070-dark-text);
+  --cpr-text-tab-highlight: var(--er2070-yellow);
+  --cpr-text-icon-normal: #c0c0c5;
+  --cpr-text-icon-dimmed: #66666e;
+  --cpr-text-icon-highlight: var(--er2070-yellow);
+  --cpr-text-chat-normal: var(--er2070-dark-text);
+  --cpr-text-chat-failure: #ff5a4f;
+  --cpr-text-chat-success: var(--er2070-lime);
+  --cpr-text-mook-normal: var(--er2070-dark-text);
+  --cpr-text-mook-header: var(--er2070-dark-text);
+  --cpr-text-mook-name: var(--er2070-dark-text);
+  --cpr-text-foundry-input: var(--er2070-dark-text);
+  --cpr-text-foundry-hint: #c0c0c0;
+  --cpr-text-foundry-hover: var(--er2070-yellow);
+  --cpr-text-hint: #c0c0c0;
+  --cpr-text-editor-header: var(--er2070-dark-text);
+  --cpr-text-editor-button: var(--er2070-black);
+  --cpr-text-dir-list: var(--er2070-dark-text);
+  --cpr-icon-actor-image-overlay: var(--er2070-dark-text);
+  --cpr-icon-actor-image-overlay-border: var(--er2070-green);
+}
+/* «Hoja 2070 clara» con el modo oscuro de RED: estas variables de Foundry vuelven a las del modo claro. */
+html.er2070-theme.er2070-light[data-cpr-theme="darkmode"] {
   --color-border-light-primary: #b5b3a4;
   --color-border-light-1: #dddddd;
   --color-shadow-primary: #ff0000;
@@ -125,7 +210,11 @@ html.er2070-theme .item-description-tab,
 html.er2070-theme .ledger-grid,
 html.er2070-theme .mook-sheet,
 html.er2070-theme .tab-pink-underlay {
-  background-image: var(--er2070-gradient);
+  background-image: var(--er2070-panel);
+}
+/* El nombre vertical del PNJ está sobre el degradado (A050-04). */
+html.er2070-theme .mook-sheet .mook-name {
+  color: var(--er2070-text-panel);
 }
 /* Marcos de sección: el mismo ancho de borde, ahora con degradado. */
 html.er2070-theme .actor-sheet .right-pane .right-content-section,
@@ -158,19 +247,15 @@ html.er2070-theme .er2070-console h3 {
   font-family: var(--er2070-font-label);
   letter-spacing: 0.02em;
 }
-/* Las imágenes por defecto de los objetos son blancas: un contorno fino las mantiene visibles sobre el blanco. */
-html.er2070-theme .weapon-image img,
-html.er2070-theme .injuries-image img,
-html.er2070-theme .effect-image img,
-html.er2070-theme .actor-sheet .item img,
-html.er2070-theme .mook-sheet .item img {
+/* Las imágenes por defecto de los objetos son blancas: un contorno fino las mantiene visibles sobre el fondo claro. */
+:is(html.er2070-light, html.er2070-theme:not([data-cpr-theme="darkmode"])) :is(.weapon-image img, .injuries-image img, .effect-image img, .actor-sheet .item img, .mook-sheet .item img) {
   filter: drop-shadow(0 0 0.06rem rgba(0, 0, 0, 0.9)) drop-shadow(0 0 0.06rem rgba(0, 0, 0, 0.6));
 }
 
 /* ------------------------------------------------------------------ consolas y chat del módulo */
 html.er2070-theme .er2070-console .window-content {
-  background: var(--er2070-white);
-  color: var(--er2070-black);
+  background: var(--cpr-background-window);
+  color: var(--cpr-text-window);
 }
 html.er2070-theme .er2070-console h3 {
   border-bottom: 2px solid transparent;
