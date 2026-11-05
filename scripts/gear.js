@@ -5,7 +5,7 @@
  */
 import { MODULE_ID, getCapabilities } from "./schema.js";
 import { shotPlan, effectiveStat, evaluateCondition, retryAllowed, beatsDv, unarmedDamage, ignoreArmorFromMultiplier, firingChamber, attackMode, stackSatisfied } from "./rules.js";
-import { L, esc, gmExec, registerHandler, resolveActor, actorCapabilities, chat, createCarrier, carriersOf, applyOperations } from "./effects.js";
+import { L, esc, gmExec, registerHandler, registerRequest, requestOperations, userOwns, denied, resolveActor, actorCapabilities, chat, createCarrier, carriersOf, applyOperations } from "./effects.js";
 import { countInterfaceRoll } from "./net.js";
 
 const RED_ID = "cyberpunk-red-core";
@@ -426,11 +426,17 @@ async function doCritPick(message, name) {
 }
 
 // Como RED: la herida se busca en el compendio cuya etiqueta coincide con el nombre de la tabla.
-registerHandler("applyInjury", async ({ targetUuid, table, name }) => {
+// La tirada se hizo en el cliente del jugador: si no la pide el DJ, el DJ confirma antes de aplicarla.
+registerHandler("applyInjury", async ({ targetUuid, table, name }, userId) => {
+  const user = game.users.get(userId);
   const target = resolveActor(targetUuid);
   const pack = game.packs.find((p) => p.metadata.label === table);
   const entry = pack?.index.find((i) => i.name === name);
   if (!target || !entry) return ui.notifications.warn(L("gear.injuryNotFound", { name }));
+  if (!user?.isGM) {
+    const ok = await Dialog.confirm({ title: L("gear.critPick"), content: `<p>${L("security.confirmInjury", { user: esc(user?.name), injury: esc(name), actor: esc(target.name) })}</p>` });
+    if (!ok) return chat(target, L("effects.vetoed", { name: esc(name) }), { whisper: game.users.filter((u) => u.isGM || u.id === userId).map((u) => u.id) });
+  }
   const injury = await pack.getDocument(entry._id);
   const data = injury.toObject();
   delete data._id;
@@ -453,10 +459,13 @@ async function workBolt(actor, item) {
   await chat(actor, L("gear.boltWorked", { actor: esc(actor.name), name: esc(item.name) }));
 }
 
-registerHandler("approveRicochet", async ({ actorUuid, itemId, user }) => {
+registerHandler("approveRicochet", async ({ actorUuid, itemId }, userId) => {
+  const requester = game.users.get(userId);
   const actor = resolveActor(actorUuid);
   const item = actor?.items.get(itemId);
   if (!item) return;
+  if (!userOwns(requester, actor)) return denied(requester, "approveRicochet", actor.name);
+  const user = requester.name;
   const ok = await Dialog.confirm({ title: L("gear.ricochetMod"), content: `<p>${L("gear.ricochetAsk", { user: esc(user), actor: esc(actor.name), name: esc(item.name) })}</p>` });
   await setState(item, { ricochetArmed: ok });
   await chat(actor, L(ok ? "gear.ricochetApproved" : "gear.ricochetVetoed", { actor: esc(actor.name), name: esc(item.name) }));
@@ -467,7 +476,7 @@ async function toggleRicochet(actor, item) {
   // El rebote siempre lo valida el DJ (trayecto despejado desde el punto de rebote).
   if (isGM()) return setState(item, { ricochetArmed: true });
   ui.notifications.info(L("gear.ricochetRequested"));
-  return gmExec("approveRicochet", { actorUuid: actor.uuid, itemId: item.id, user: game.user.name });
+  return gmExec("approveRicochet", { actorUuid: actor.uuid, itemId: item.id });
 }
 
 function pickAmmo(actor, item) {
@@ -516,9 +525,22 @@ async function activate(actor, item, cap) {
   await chat(actor, L(cap.action === "action" ? "gear.activatedAction" : "gear.activatedFree", { actor: esc(actor.name), name: esc(name) }));
   const operations = [...(cap.humanityCost ? [{ op: "humanity", formula: cap.humanityCost, sign: "loss" }] : []), ...(cap.onActivate ?? [])];
   if (!operations.length) return;
-  const data = { sourceUuid: item.uuid, sourceActorUuid: actor.uuid, sourceName: actor.name, targetUuid: actor.uuid, label: name, operations, gmConfirm: cap.gmConfirm };
-  return actor.isOwner && !cap.gmConfirm ? applyOperations(data) : gmExec("applyOperations", data);
+  if (actor.isOwner && !cap.gmConfirm) {
+    return applyOperations({ sourceUuid: item.uuid, sourceActorUuid: actor.uuid, sourceName: actor.name, targetUuid: actor.uuid, label: name, operations });
+  }
+  // Con confirmación del DJ, el DJ reconstruye las operaciones a partir del propio implante.
+  return requestOperations("activation", { actorUuid: actor.uuid, itemId: item.id, capId: cap.id });
 }
+
+registerRequest("activation", async ({ actorUuid, itemId, capId }, user) => {
+  const actor = resolveActor(actorUuid);
+  if (!actor || !userOwns(user, actor)) return { reason: "notOwner" };
+  const item = actor.items.get(itemId);
+  const cap = item ? getCapabilities(item).find((c) => c.type === "activation" && c.id === capId) : null;
+  if (!cap) return { reason: "badSource" };
+  const operations = [...(cap.humanityCost ? [{ op: "humanity", formula: cap.humanityCost, sign: "loss" }] : []), ...(cap.onActivate ?? [])];
+  return { apply: { sourceUuid: item.uuid, sourceActorUuid: actor.uuid, sourceName: actor.name, targetUuid: actor.uuid, label: item.name, operations, gmConfirm: cap.gmConfirm } };
+});
 
 // ---------------------------------------------------------------- consola de equipo
 

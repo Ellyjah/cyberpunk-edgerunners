@@ -11,21 +11,74 @@ export const esc = (s) => Handlebars.escapeExpression(String(s ?? ""));
 
 // ---------------------------------------------------------------- DJ remoto
 
+// Cada manejador recibe (datos, userId). El userId lo añade el servidor de Foundry al reenviar el
+// mensaje: es la identidad real del remitente. Los datos del cliente nunca se dan por buenos.
 const HANDLERS = {};
 export const registerHandler = (name, fn) => { HANDLERS[name] = fn; };
 const isActiveGM = () => game.user === game.users.activeGM;
 
 /** Ejecuta un manejador en el cliente del DJ activo (localmente si este cliente lo es). */
 export async function gmExec(name, data) {
-  if (isActiveGM()) return HANDLERS[name](data);
+  if (isActiveGM()) return HANDLERS[name](data, game.user.id);
   if (!game.users.activeGM) return ui.notifications.error(L("net.noGM"));
   game.socket.emit(`module.${MODULE_ID}`, { name, data });
 }
 
 export function listenSocket() {
-  game.socket.on(`module.${MODULE_ID}`, ({ name, data }) => {
-    if (isActiveGM() && HANDLERS[name]) HANDLERS[name](data);
+  game.socket.on(`module.${MODULE_ID}`, async (message, userId) => {
+    if (!isActiveGM() || typeof userId !== "string" || !game.users.get(userId)) return;
+    const fn = HANDLERS[message?.name];
+    if (!fn) return;
+    try { await fn(message.data ?? {}, userId); } catch (err) { console.error(`${MODULE_ID} |`, err); }
   });
+}
+
+/** ¿Tiene el usuario permiso de propietario sobre el documento? (el DJ siempre). */
+export const userOwns = (user, doc) => Boolean(user && doc && (user.isGM || doc.testUserPermission?.(user, "OWNER")));
+
+/** Registra y avisa al DJ de una solicitud rechazada. */
+export function denied(user, what, reason = "") {
+  console.warn(`${MODULE_ID} | solicitud rechazada`, { user: user?.name, what, reason });
+  ui.notifications.warn(L("security.denied", { user: user?.name ?? "?", what: String(what ?? "?"), reason: String(reason ?? "") }));
+}
+
+// Solicitudes de operaciones: el cliente pide una acción tipada y el DJ obtiene las operaciones de los
+// datos del propio Item tras comprobar quién lo pide y su contexto. Si el contexto no se puede comprobar,
+// decide el DJ; si la solicitud no es válida, se rechaza.
+const REQUESTS = {};
+export const registerRequest = (kind, fn) => { REQUESTS[kind] = fn; };
+export const requestOperations = (kind, data) => gmExec("requestOperations", { ...data, kind });
+
+registerHandler("requestOperations", async (data, userId) => {
+  const user = game.users.get(userId);
+  const resolver = REQUESTS[data?.kind];
+  if (!user || !resolver) return denied(user, data?.kind, "kind");
+  let result;
+  try { result = await resolver(data, user); } catch (err) { result = { reason: err.message }; }
+  if (result?.apply) return applyOperations(result.apply);
+  if (result?.confirm) {
+    const target = resolveActor(result.confirm.targetUuid);
+    const ok = await Dialog.confirm({
+      title: result.confirm.label,
+      content: `<p>${L("security.confirmUnverified", { user: esc(user.name), name: esc(result.confirm.label), actor: esc(target?.name), reason: esc(result.reason ?? "") })}</p>`,
+    });
+    if (ok) return applyOperations(result.confirm);
+    return target && chat(target, L("effects.vetoed", { name: esc(result.confirm.label) }), { whisper: ownersOf(target) });
+  }
+  return denied(user, data.kind, result?.reason);
+});
+
+// ---------------------------------------------------------------- mutaciones en serie (R04)
+
+const locks = new Map();
+/** Ejecuta `fn` cuando terminen las anteriores con la misma clave (leer-modificar-escribir sin carreras). */
+export function serialize(key, fn) {
+  const previous = locks.get(key) ?? Promise.resolve();
+  const run = previous.catch(() => {}).then(fn);
+  const tail = run.catch(() => {});
+  locks.set(key, tail);
+  tail.then(() => { if (locks.get(key) === tail) locks.delete(key); });
+  return run;
 }
 
 // ---------------------------------------------------------------- utilidades
@@ -55,7 +108,13 @@ export function getTurn(combatant) {
   const t = combatant?.getFlag(MODULE_ID, "turn");
   return t?.key === key ? t : { key, used: 0, extra: 0, targets: [] };
 }
-registerHandler("setTurn", async ({ combatantId, turn }) => game.combat?.combatants.get(combatantId)?.setFlag(MODULE_ID, "turn", turn));
+registerHandler("setTurn", async ({ combatantId, turn }, userId) => {
+  const user = game.users.get(userId);
+  const combatant = game.combat?.combatants.get(combatantId);
+  if (!combatant) return;
+  if (!userOwns(user, combatant.actor)) return denied(user, "setTurn", combatant.name);
+  return combatant.setFlag(MODULE_ID, "turn", turn);
+});
 export const saveTurn = (combatant, turn) =>
   combatant.isOwner ? combatant.setFlag(MODULE_ID, "turn", turn) : gmExec("setTurn", { combatantId: combatant.id, turn });
 // Si la ficha abierta es la del actor del mundo y su token no está vinculado, se usa el combatiente de ese actor base.
@@ -108,6 +167,35 @@ export const expireHandlers = [];
 
 // Foundry lanza a la vez updateCombat y updateWorldTime al cambiar de asalto: evita retirar dos veces.
 const expiring = new Set();
+// Portadores ya limpiados (clave actor.uuid + id): la limpieza se hace una sola vez, la retire quien la retire.
+const cleaned = new Set();
+
+/** ¿Sostiene algún otro portador activo del actor este estado? */
+const statusHeldElsewhere = (actor, status, exceptId) =>
+  carriersOf(actor).some((e) => e.id !== exceptId && !e.disabled && e.flags[MODULE_ID].timed.statuses?.includes(status));
+
+/**
+ * Deshace lo que creó un portador: Items temporales, estados que reclamó (si ningún otro portador
+ * los sostiene) y suspensiones. Idempotente. No aplica operaciones diferidas: eso solo al caducar.
+ */
+async function cleanupCarrier(actor, effectId, timed) {
+  const key = `${actor.uuid}.${effectId}`;
+  if (cleaned.has(key)) return;
+  cleaned.add(key);
+  const steps = [];
+  const items = (timed.createdItems ?? []).filter((id) => actor.items.has(id));
+  if (items.length) steps.push(() => actor.deleteEmbeddedDocuments("Item", items));
+  for (const status of timed.statuses ?? []) {
+    steps.push(() => (!statusHeldElsewhere(actor, status, effectId) && actor.statuses?.has(status) ? actor.toggleStatusEffect(status, { active: false }) : null));
+  }
+  for (const id of timed.suspended ?? []) {
+    const item = actor.items.get(id);
+    if (item) steps.push(() => serialize(item.uuid, () => item.setFlag(MODULE_ID, "suspendedBy", (item.getFlag(MODULE_ID, "suspendedBy") ?? []).filter((e) => e !== effectId))));
+  }
+  for (const step of steps) {
+    try { await step(); } catch (err) { console.error(`${MODULE_ID} |`, err); }
+  }
+}
 
 /** Retira un portador y todo lo que creó (Items temporales, estados, suspensiones). */
 export async function expireCarrier(effect) {
@@ -116,14 +204,7 @@ export async function expireCarrier(effect) {
   expiring.add(effect.uuid);
   try {
     const timed = effect.flags[MODULE_ID]?.timed ?? {};
-    const steps = [];
-    const items = (timed.createdItems ?? []).filter((id) => actor.items.has(id));
-    if (items.length) steps.push(() => actor.deleteEmbeddedDocuments("Item", items));
-    for (const status of timed.statuses ?? []) steps.push(() => actor.toggleStatusEffect(status, { active: false }));
-    for (const id of timed.suspended ?? []) {
-      const item = actor.items.get(id);
-      if (item) steps.push(() => item.setFlag(MODULE_ID, "suspendedBy", (item.getFlag(MODULE_ID, "suspendedBy") ?? []).filter((e) => e !== effect.id)));
-    }
+    const steps = [() => cleanupCarrier(actor, effect.id, timed)];
     // Operaciones diferidas (`on-expire`): se aplican al caducar, no si alguien retira el efecto a mano.
     if (timed.onExpire?.operations?.length) {
       steps.push(() => applyOperations({ targetUuid: actor.uuid, sourceUuid: timed.source, sourceActorUuid: timed.sourceActor, label: effect.name, operations: timed.onExpire.operations }));
@@ -145,9 +226,10 @@ export async function expireCarrier(effect) {
   }
 }
 
-/** Actores que pueden llevar portadores: del mundo y sintéticos de la escena activa. */
-function carrierActors() {
-  const tokens = canvas.scene?.tokens.filter((t) => !t.actorLink && t.actor).map((t) => t.actor) ?? [];
+/** Actores que pueden llevar portadores: del mundo y sintéticos de la escena activa (o de todas). */
+function carrierActors(allScenes = false) {
+  const scenes = allScenes ? game.scenes.contents : [canvas.scene].filter(Boolean);
+  const tokens = scenes.flatMap((sc) => sc.tokens.filter((t) => !t.actorLink && t.actor).map((t) => t.actor));
   return [...game.actors.contents, ...tokens];
 }
 export const carriersOf = (actor) => actor.effects.filter((e) => e.flags[MODULE_ID]?.timed);
@@ -175,8 +257,12 @@ async function expireDue() {
 /** Daño directo a PD: ignora blindaje y no lo desgasta; no produce críticos de arma. */
 export async function directDamage(target, formula, label) {
   const roll = await new Roll(String(formula)).evaluate();
-  const hp = target.system.derivedStats.hp.value;
-  await target.update({ "system.derivedStats.hp.value": Math.max(0, hp - roll.total) });
+  // Leer y escribir PD en serie por actor: dos daños simultáneos no se pisan.
+  const hp = await serialize(`hp:${target.uuid}`, async () => {
+    const before = target.system.derivedStats.hp.value;
+    await target.update({ "system.derivedStats.hp.value": Math.max(0, before - roll.total) });
+    return before;
+  });
   const note = hp <= 0 ? `<p>${L("effects.alreadyMortal")}</p>` : "";
   await chat(target, `<p>${L("effects.directDamage", { name: esc(label), actor: esc(target.name), damage: roll.total })}</p>${note}`, { rolls: [roll] });
 }
@@ -212,6 +298,29 @@ export function chooseItems(items, count, title) {
 }
 
 // ---------------------------------------------------------------- operaciones
+
+/** Aplica una tirada de Humanidad ya hecha (se llama en serie por actor). */
+async function applyHumanityRoll(target, op, ctx, roll) {
+  const hum = target.system.derivedStats?.humanity;
+  if (!hum) return;
+  const loss = op.sign === "loss";
+  const before = Number.isInteger(hum.value) ? hum.value : hum.max;
+  let value = before + (loss ? -roll.total : roll.total);
+  // Las ganancias no superan la Humanidad máxima de RED (la que permite la terapia).
+  if (!loss && op.respectMax !== false) value = Math.max(before, Math.min(value, hum.max));
+  const amount = Math.abs(value - before);
+  const sentence = L(loss ? "effects.humanityLossLedger" : "effects.humanityGainLedger", { amount, total: value });
+  // Registro nativo de RED (derivedStats.humanity.transactions); la Humanidad máxima no cambia.
+  await target.update({
+    "system.derivedStats.humanity.value": value,
+    "system.derivedStats.humanity.transactions": [...(hum.transactions ?? []), [sentence, ctx.label]],
+  });
+  await target.setMaxHumanity?.();
+  if (loss) ctx.lastHumanityLoss = amount;
+  ctx.humanityDelta = (ctx.humanityDelta ?? 0) + value - before;
+  const note = value <= 0 ? `<p><strong>${L("effects.cyberpsychosis", { actor: esc(target.name) })}</strong></p>` : "";
+  await chat(target, `<p>${L(loss ? "effects.humanityLoss" : "effects.humanityGain", { name: esc(ctx.label), actor: esc(target.name), amount, total: value })}</p>${note}`, { rolls: [roll] });
+}
 
 const OPS = {
   "stat-mod": (target, op, ctx) => createCarrier(target, ctx, { changes: [{ key: op.key, mode: 2, value: String(op.value) }], duration: op.duration }),
@@ -250,7 +359,7 @@ const OPS = {
     const effect = await createCarrier(target, ctx, { duration: op.duration, timed: { suspended: ids } });
     for (const id of ids) {
       const item = target.items.get(id);
-      await item?.setFlag(MODULE_ID, "suspendedBy", [...(item.getFlag(MODULE_ID, "suspendedBy") ?? []), effect.id]);
+      if (item) await serialize(item.uuid, () => item.setFlag(MODULE_ID, "suspendedBy", [...(item.getFlag(MODULE_ID, "suspendedBy") ?? []), effect.id]));
     }
     const names = ids.map((id) => esc(target.items.get(id)?.name)).join(", ");
     await chat(target, L("effects.suspended", { actor: esc(target.name), items: names }));
@@ -269,9 +378,16 @@ const OPS = {
   },
 
   unconscious: async (target, op, ctx) => {
-    const statuses = ["unconscious", ...(op.prone ? ["prone"] : [])];
-    for (const s of statuses) await target.toggleStatusEffect(s, { active: true });
-    await createCarrier(target, ctx, { duration: op.duration, timed: { statuses, endsOnDamage: op.endsOnDamage !== false } });
+    // Solo se reclaman los estados que pone el módulo o que ya sostiene otro portador del módulo;
+    // un estado previo de otra procedencia no se reclama y nunca se retira.
+    const claimed = [];
+    for (const s of ["unconscious", ...(op.prone ? ["prone"] : [])]) {
+      const active = target.statuses?.has(s);
+      if (active && !statusHeldElsewhere(target, s, null)) continue;
+      if (!active) await target.toggleStatusEffect(s, { active: true });
+      claimed.push(s);
+    }
+    await createCarrier(target, ctx, { duration: op.duration, timed: { statuses: claimed, endsOnDamage: op.endsOnDamage !== false } });
   },
 
   "initiative-top": async (target) => {
@@ -283,25 +399,7 @@ const OPS = {
 
   humanity: async (target, op, ctx) => {
     const roll = await new Roll(String(op.formula)).evaluate();
-    const hum = target.system.derivedStats?.humanity;
-    if (!hum) return;
-    const loss = op.sign === "loss";
-    const before = Number.isInteger(hum.value) ? hum.value : hum.max;
-    let value = before + (loss ? -roll.total : roll.total);
-    // Las ganancias no superan la Humanidad máxima de RED (la que permite la terapia).
-    if (!loss && op.respectMax !== false) value = Math.max(before, Math.min(value, hum.max));
-    const amount = Math.abs(value - before);
-    const sentence = L(loss ? "effects.humanityLossLedger" : "effects.humanityGainLedger", { amount, total: value });
-    // Registro nativo de RED (derivedStats.humanity.transactions); la Humanidad máxima no cambia.
-    await target.update({
-      "system.derivedStats.humanity.value": value,
-      "system.derivedStats.humanity.transactions": [...(hum.transactions ?? []), [sentence, ctx.label]],
-    });
-    await target.setMaxHumanity?.();
-    if (loss) ctx.lastHumanityLoss = amount;
-    ctx.humanityDelta = (ctx.humanityDelta ?? 0) + value - before;
-    const note = value <= 0 ? `<p><strong>${L("effects.cyberpsychosis", { actor: esc(target.name) })}</strong></p>` : "";
-    await chat(target, `<p>${L(loss ? "effects.humanityLoss" : "effects.humanityGain", { name: esc(ctx.label), actor: esc(target.name), amount, total: value })}</p>${note}`, { rolls: [roll] });
+    return serialize(`hum:${target.uuid}`, () => applyHumanityRoll(target, op, ctx, roll));
   },
 
   // Con Humanidad negativa, daño directo igual a la pérdida de la operación `humanity` anterior.
@@ -328,8 +426,10 @@ const OPS = {
   "extra-action": async (target, op) => {
     const c = combatantOf(target);
     if (!c) return;
-    const turn = getTurn(c);
-    await c.setFlag(MODULE_ID, "turn", { ...turn, extra: turn.extra + (op.count ?? 1) });
+    await serialize(`turn:${c.uuid}`, () => {
+      const turn = getTurn(c);
+      return c.setFlag(MODULE_ID, "turn", { ...turn, extra: turn.extra + (op.count ?? 1) });
+    });
   },
 };
 
@@ -355,7 +455,7 @@ export async function applyOperations(data) {
   }
   return ctx;
 }
-registerHandler("applyOperations", applyOperations);
+// applyOperations NO se expone por socket: los jugadores usan requestOperations (R01).
 
 // ---------------------------------------------------------------- hooks
 
@@ -401,6 +501,35 @@ export function registerEffectHooks() {
 
   Hooks.on("updateWorldTime", () => { if (isActiveGM()) expireDue(); });
 
+  // Retirada manual (o por cualquier otra vía): misma limpieza, una sola vez (R02).
+  Hooks.on("deleteActiveEffect", async (effect) => {
+    const timed = effect.flags?.[MODULE_ID]?.timed;
+    const actor = effect.parent;
+    if (!isActiveGM() || !timed || actor?.documentName !== "Actor") return;
+    const key = `${actor.uuid}.${effect.id}`;
+    if (cleaned.has(key)) return cleaned.delete(key);
+    if (!actor.isToken && !game.actors.has(actor.id)) return;
+    await cleanupCarrier(actor, effect.id, timed);
+    cleaned.delete(key);
+  });
+
+  // Si se borra el Item que origina un portador (arma cargada, implante, droga), el portador se retira.
+  Hooks.on("deleteItem", async (item) => {
+    const actor = item.parent;
+    if (!isActiveGM() || actor?.documentName !== "Actor") return;
+    for (const effect of carriersOf(actor)) {
+      const t = effect.flags[MODULE_ID].timed;
+      const linked = [t.charge, t.activation, t.cooldown, t.drug].some((x) => x?.itemId === item.id);
+      if (linked && ownsEffect(actor, effect.id) && actor.effects.has(effect.id)) await effect.delete();
+    }
+  });
+
+  // Desactivar el módulo: mientras su código sigue cargado, se suspenden sus portadores (R05).
+  Hooks.on("updateSetting", (setting) => {
+    if (!isActiveGM() || setting.key !== "core.moduleConfiguration") return;
+    if (game.settings.get("core", "moduleConfiguration")?.[MODULE_ID] === false) suspendAllCarriers();
+  });
+
   Hooks.on("preUpdateActor", (actor, changes, options) => {
     options.er2070Hp = actor.system?.derivedStats?.hp?.value;
   });
@@ -410,4 +539,48 @@ export function registerEffectHooks() {
     if (hp === undefined || hp >= options.er2070Hp) return;
     for (const effect of carriersOf(actor)) if (effect.flags[MODULE_ID].timed.endsOnDamage) await expireCarrier(effect);
   });
+}
+
+// ---------------------------------------------------------------- desactivación del módulo (R05)
+
+/**
+ * Suspende todos los portadores del módulo (desactiva sus ActiveEffects y retira los estados que
+ * reclaman), marcándolos para restaurarlos al volver a activar el módulo. Lo llama el cliente del DJ
+ * al desactivar el módulo; también está en la API para usarlo antes de desinstalarlo.
+ */
+export async function suspendAllCarriers() {
+  let count = 0;
+  for (const actor of carrierActors(true)) {
+    for (const effect of ownCarriers(actor)) {
+      const t = effect.flags[MODULE_ID].timed;
+      if (effect.disabled || t.suspendedByDisable) continue;
+      try {
+        await effect.update({ disabled: true, [`flags.${MODULE_ID}.timed.suspendedByDisable`]: true });
+        for (const status of t.statuses ?? []) {
+          if (!statusHeldElsewhere(actor, status, effect.id) && actor.statuses?.has(status)) await actor.toggleStatusEffect(status, { active: false });
+        }
+        count += 1;
+      } catch (err) { console.error(`${MODULE_ID} |`, err); }
+    }
+  }
+  if (count) ui.notifications.info(L("security.suspendedAll", { count }));
+  return count;
+}
+
+/** Restaura los portadores suspendidos al desactivar el módulo (al arrancar con el módulo activo). */
+export async function restoreSuspendedCarriers() {
+  let count = 0;
+  for (const actor of carrierActors(true)) {
+    for (const effect of ownCarriers(actor)) {
+      const t = effect.flags[MODULE_ID].timed;
+      if (!t.suspendedByDisable) continue;
+      try {
+        await effect.update({ disabled: false, [`flags.${MODULE_ID}.timed.-=suspendedByDisable`]: null });
+        for (const status of t.statuses ?? []) if (!actor.statuses?.has(status)) await actor.toggleStatusEffect(status, { active: true });
+        count += 1;
+      } catch (err) { console.error(`${MODULE_ID} |`, err); }
+    }
+  }
+  if (count) ui.notifications.info(L("security.restoredAll", { count }));
+  return count;
 }

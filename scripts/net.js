@@ -4,7 +4,7 @@
  */
 import { MODULE_ID, getCapabilities } from "./schema.js";
 import { netActionsForRank, parseDvList, neuroArchitecture, redD10, attackerWins, firewallRequired, quickhackBlocked, netActionBonus, beatsDv } from "./rules.js";
-import { L, esc, gmExec, registerHandler, resolveActor, actorCapabilities, chat, getTurn, saveTurn, combatantOf, sameActor, chooseItems, eligibleItems } from "./effects.js";
+import { L, esc, gmExec, registerHandler, registerRequest, requestOperations, userOwns, denied, serialize, resolveActor, actorCapabilities, chat, getTurn, saveTurn, combatantOf, sameActor, chooseItems, eligibleItems } from "./effects.js";
 
 const setting = (key) => game.settings.get(MODULE_ID, key);
 // Aptitudes de Interface de RED que cuentan como acción NET (Escaneo incluida en los años 2070).
@@ -22,7 +22,13 @@ const deckOf = (actor) => actor.getEquippedCyberdeck?.() ?? null;
 const knowsIntrusions = (actor) => Boolean(deckOf(actor));
 
 const getNet = (actor) => foundry.utils.deepClone(actor.getFlag(MODULE_ID, "state.net") ?? { connections: [], lockouts: [] });
-registerHandler("setNet", async ({ actorUuid, state }) => resolveActor(actorUuid)?.setFlag(MODULE_ID, "state.net", state));
+registerHandler("setNet", async ({ actorUuid, state }, userId) => {
+  const user = game.users.get(userId);
+  const actor = resolveActor(actorUuid);
+  if (!actor) return;
+  if (!userOwns(user, actor)) return denied(user, "setNet", actor.name);
+  return actor.setFlag(MODULE_ID, "state.net", state);
+});
 const saveNet = (actor, state) => (actor.isOwner ? actor.setFlag(MODULE_ID, "state.net", state) : gmExec("setNet", { actorUuid: actor.uuid, state }));
 
 /** Arquitectura del neuropuerto del objetivo, calculada al vuelo. */
@@ -101,9 +107,12 @@ async function countNetAction(actor) {
   if (setting("actionCounter") !== "auto" || !game.combat?.started) return;
   const c = combatantOf(actor);
   if (!c || game.combat.combatant !== c) return;
-  const turn = getTurn(c);
-  turn.used += 1;
-  await saveTurn(c, turn);
+  const turn = await serialize(`turn:${c.uuid}`, async () => {
+    const t = getTurn(c);
+    t.used += 1;
+    await saveTurn(c, t);
+    return t;
+  });
   const max = netActionsMax(actor, turn.extra);
   if (turn.used > max) {
     ui.notifications.warn(L("net.tooManyActions", { used: turn.used, max }));
@@ -282,11 +291,38 @@ async function quickhack(actor, index) {
   for (const [i, op] of (cap.operations ?? []).entries()) {
     if (op.pick === "attacker") picks[i] = await chooseItems(eligibleItems(target, op), op.op === "eject-chip" ? 1 : op.count ?? 1, name);
   }
-  await gmExec("applyOperations", {
-    sourceUuid: item.uuid, sourceActorUuid: actor.uuid, sourceName: actor.name, targetUuid: conn.targetToken ?? conn.target,
-    label: name, operations: cap.operations ?? [], picks, gmConfirm: cap.gmConfirm,
-  });
+  // El DJ obtiene las operaciones del propio Item y comprueba la conexión antes de aplicarlas.
+  await requestOperations("quickhack", { sourceActorUuid: actor.uuid, hackUuid: item.uuid, capId: cap.id, targetUuid: conn.targetToken ?? conn.target, picks });
 }
+
+/** Elecciones del atacante limitadas a los Items elegibles del objetivo y a su número. */
+function sanitizePicks(target, operations, picks) {
+  const clean = {};
+  for (const [i, op] of (operations ?? []).entries()) {
+    if (op.pick !== "attacker" || !Array.isArray(picks?.[i])) continue;
+    const allowed = new Set(eligibleItems(target, op).map((x) => x.id));
+    clean[i] = picks[i].filter((id) => allowed.has(id)).slice(0, op.op === "eject-chip" ? 1 : op.count ?? 1);
+  }
+  return clean;
+}
+
+registerRequest("quickhack", async ({ sourceActorUuid, hackUuid, capId, targetUuid, picks }, user) => {
+  const actor = resolveActor(sourceActorUuid);
+  if (!actor || !userOwns(user, actor)) return { reason: "notOwner" };
+  const item = await fromUuid(hackUuid);
+  const cap = item?.documentName === "Item" ? getCapabilities(item).find((c) => c.type === "quickhack" && c.id === capId) : null;
+  if (!cap) return { reason: "badSource" };
+  const target = resolveActor(targetUuid);
+  if (!target) return { reason: "noTarget" };
+  const apply = {
+    sourceUuid: item.uuid, sourceActorUuid: actor.uuid, sourceName: actor.name, targetUuid,
+    label: cap.label ?? item.name, operations: cap.operations ?? [], picks: sanitizePicks(target, cap.operations, picks), gmConfirm: cap.gmConfirm,
+  };
+  const conn = getNet(actor).connections.find((c) => c.targetToken === targetUuid || c.target === targetUuid);
+  const floors = architectureOf(target).length;
+  if (!conn || (conn.floor ?? 0) < floors - 1 || interfaceRank(actor) < cap.minRank) return { confirm: apply, reason: L("security.noContext") };
+  return { apply };
+});
 
 async function disconnect(actor, index, { unsafe = false, reason = "" } = {}) {
   const state = getNet(actor);
@@ -300,8 +336,11 @@ async function disconnect(actor, index, { unsafe = false, reason = "" } = {}) {
     ? `<p>${L("net.unsafe", { actor: esc(actor.name), target: esc(target?.name), reason: esc(reason) })}</p>`
     : `<p>${L("net.disconnected", { actor: esc(actor.name), target: esc(target?.name) })}</p>`);
 }
-registerHandler("unsafeDisconnect", async ({ actorUuid, target, reason }) => {
+registerHandler("unsafeDisconnect", async ({ actorUuid, target, reason }, userId) => {
+  const user = game.users.get(userId);
   const actor = resolveActor(actorUuid);
+  // Puede pedirlo el propietario del netrunner o el del neuropuerto al que está conectado (expulsión).
+  if (actor && !userOwns(user, actor) && !userOwns(user, resolveActor(target))) return denied(user, "unsafeDisconnect", actor.name);
   const index = actor ? getNet(actor).connections.findIndex((c) => c.target === target) : -1;
   if (index >= 0) await disconnect(actor, index, { unsafe: true, reason });
 });

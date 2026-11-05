@@ -88,6 +88,10 @@
       "corporateMultiplier": {
         "name": "Recargo de compra corporativa sugerido",
         "hint": "Multiplicador que se propone al configurar una tienda como distribuidor autorizado. Solo afecta a la compra, no a la reventa."
+      },
+      "theme2070": {
+        "name": "Tema 2070 (hojas del Mission Kit)",
+        "hint": "Aplica a todos los jugadores la paleta amarillo y verde y las fuentes inspiradas en las hojas de personaje del Mission Kit, en las fichas, diálogos y tarjetas de RED y en las consolas del módulo. No cambia la distribución de las hojas. Solo el DJ puede cambiarlo."
       }
     },
     "net": {
@@ -332,6 +336,14 @@
       "vendorHint": "Multiplica el precio que pagan los compradores en esta tienda (distribuidor autorizado: ×{corporate}). No cambia el precio del objeto ni lo que se cobra al revender. 1 = sin recargo.",
       "vendorMultiplier": "Multiplicador",
       "vendorSaved": "Recargo de {actor}: ×{mult}."
+    },
+    "security": {
+      "denied": "Solicitud rechazada de {user}: {what} ({reason}).",
+      "confirmUnverified": "{user} solicita «{name}» sobre {actor}, pero el módulo no ha podido comprobar el contexto ({reason}). ¿Aplicar?",
+      "confirmInjury": "{user} elige la herida crítica {injury} para {actor}. ¿Aplicarla?",
+      "noContext": "sin conexión completa con el objetivo o rango insuficiente",
+      "suspendedAll": "Edgerunners 2070: {count} efecto(s) del módulo suspendido(s) al desactivarlo.",
+      "restoredAll": "Edgerunners 2070: {count} efecto(s) del módulo restaurado(s)."
     }
   }
 }

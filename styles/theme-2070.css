@@ -1,0 +1,195 @@
+/*
+ * Tema 2070 (opcional): paleta y tipografía inspiradas en las hojas de personaje del
+ * Mission Kit, con colores propios y fuentes libres (SIL OFL 1.1, ver fonts/).
+ * Solo actúa con la clase `er2070-theme` en <html>, que el DJ activa desde los ajustes.
+ * No cambia tamaños, márgenes ni distribución de RED: solo variables de color, fondos
+ * (degradados) y familias tipográficas con métricas verticales iguales a las de Jost.
+ */
+
+/* ------------------------------------------------------------------ fuentes */
+/* Mismas métricas verticales que Jost (ascendente 1,07; descendente 0,38): misma altura de línea. */
+@font-face { font-family: "ER2070 Rajdhani"; src: url("../fonts/Rajdhani-Regular.ttf") format("truetype"); font-weight: 300; font-style: normal; size-adjust: 104%; ascent-override: 103%; descent-override: 36.5%; line-gap-override: 0%; }
+@font-face { font-family: "ER2070 Rajdhani"; src: url("../fonts/Rajdhani-Medium.ttf") format("truetype"); font-weight: 400; font-style: normal; size-adjust: 104%; ascent-override: 103%; descent-override: 36.5%; line-gap-override: 0%; }
+@font-face { font-family: "ER2070 Rajdhani"; src: url("../fonts/Rajdhani-SemiBold.ttf") format("truetype"); font-weight: 500 600; font-style: normal; size-adjust: 104%; ascent-override: 103%; descent-override: 36.5%; line-gap-override: 0%; }
+@font-face { font-family: "ER2070 Rajdhani"; src: url("../fonts/Rajdhani-Bold.ttf") format("truetype"); font-weight: 700 900; font-style: normal; size-adjust: 104%; ascent-override: 103%; descent-override: 36.5%; line-gap-override: 0%; }
+@font-face { font-family: "ER2070 Saira Condensed"; src: url("../fonts/SairaCondensed-SemiBold.ttf") format("truetype"); font-weight: 100 600; font-style: normal; ascent-override: 107%; descent-override: 38%; line-gap-override: 0%; }
+@font-face { font-family: "ER2070 Saira Condensed"; src: url("../fonts/SairaCondensed-Bold.ttf") format("truetype"); font-weight: 700 900; font-style: normal; ascent-override: 107%; descent-override: 38%; line-gap-override: 0%; }
+/* Los títulos grandes de RED usan Rubik (ascendente 0,94; descendente 0,25): versión con sus métricas. */
+@font-face { font-family: "ER2070 Saira Hero"; src: url("../fonts/SairaCondensed-SemiBold.ttf") format("truetype"); font-weight: 100 600; font-style: normal; ascent-override: 94%; descent-override: 25%; line-gap-override: 0%; }
+@font-face { font-family: "ER2070 Saira Hero"; src: url("../fonts/SairaCondensed-Bold.ttf") format("truetype"); font-weight: 700 900; font-style: normal; ascent-override: 94%; descent-override: 25%; line-gap-override: 0%; }
+
+/* ------------------------------------------------------------------ paleta */
+/* Se fuerza la hoja clara también con el modo oscuro de RED (decisión del director). */
+html.er2070-theme,
+html.er2070-theme[data-cpr-theme] {
+  --er2070-yellow: #f4e300;
+  --er2070-lime: #b6cf18;
+  --er2070-green: #70b931;
+  --er2070-green-dark: #3d7a1a;
+  --er2070-black: #000000;
+  --er2070-white: #ffffff;
+  --er2070-grey: #f2f2f2;
+  --er2070-gradient: linear-gradient(100deg, var(--er2070-green) 0%, var(--er2070-lime) 45%, var(--er2070-yellow) 100%);
+
+  --cpr-font-primary: "ER2070 Rajdhani", "Jost", sans-serif;
+  --cpr-font-hero: "ER2070 Saira Hero", "Rubik", sans-serif;
+  --cpr-font-journal-header: "ER2070 Saira Hero", "Rubik", sans-serif;
+  --cpr-font-pause: "ER2070 Saira Hero", "Tektur", sans-serif;
+  --er2070-font-label: "ER2070 Saira Condensed", "Jost", sans-serif;
+
+  --cpr-color-black: #000000;
+  --cpr-color-near-black: #0d0b0c;
+  --cpr-color-off-black: #1a1a1a;
+  --cpr-color-white: var(--er2070-white);
+  --cpr-color-pink: var(--er2070-grey);
+  --cpr-color-red: var(--er2070-green-dark);
+
+  --cpr-background-window: var(--er2070-white);
+  --cpr-background-box: var(--er2070-white);
+  --cpr-background-border: var(--er2070-lime);
+  --cpr-background-header: var(--er2070-black);
+  --cpr-background-pill: var(--er2070-black);
+  --cpr-background-row-even: var(--er2070-white);
+  --cpr-background-row-odd: var(--er2070-grey);
+  --cpr-background-tab-active: var(--er2070-green);
+  --cpr-background-tab-inactive: var(--er2070-black);
+  --cpr-background-tab-underlay: var(--er2070-yellow);
+  --cpr-background-code: #d9d9d9;
+  --cpr-background-content-link: #e6e6e6;
+  --cpr-background-chat-card: var(--er2070-white);
+  --cpr-background-chat-card-block: var(--er2070-black);
+  --cpr-background-chat-card-block-before: var(--er2070-white);
+  --cpr-background-chat-border: #9e9f9f;
+  --cpr-background-foundry-input: var(--er2070-white);
+  --cpr-background-foundry-hover: var(--er2070-lime);
+  --cpr-background-editor-button: var(--er2070-white);
+  --cpr-background-editor-button-selected: #d9d9d9;
+  --cpr-background-editor-button-hover: #e6e6e6;
+  --cpr-background-editor-button-active: #e6e6e6;
+  --cpr-background-editor-header: var(--er2070-white);
+  --cpr-background-cyberdeck-section-header: var(--er2070-yellow);
+  --cpr-background-dialog-border: var(--er2070-green);
+  --cpr-background-dialog-selected: rgba(244, 227, 0, 0.45);
+  --cpr-background-dialog-hr-gradient-start: var(--er2070-green);
+  --cpr-background-dialog-hr-gradient-middle: var(--er2070-lime);
+  --cpr-background-dialog-hr-gradient-end: var(--er2070-yellow);
+  --cpr-background-journal-blockquote: var(--er2070-grey);
+  --cpr-background-toggle-checked: var(--er2070-green);
+  --cpr-background-toggle-unchecked: #444444;
+
+  --cpr-text-normal: var(--cpr-color-near-black);
+  --cpr-text-window: var(--er2070-black);
+  --cpr-text-header: var(--er2070-white);
+  --cpr-text-header-line: var(--er2070-green-dark);
+  --cpr-text-header-line-box: var(--er2070-black);
+  --cpr-text-header-arrow: var(--er2070-green-dark);
+  --cpr-text-pill: var(--er2070-white);
+  --cpr-text-tab-normal: var(--er2070-white);
+  --cpr-text-tab-highlight: var(--er2070-yellow);
+  --cpr-text-icon-normal: var(--cpr-color-near-black);
+  --cpr-text-icon-dimmed: #9e9f9f;
+  --cpr-text-icon-highlight: var(--er2070-green-dark);
+  --cpr-text-chat-normal: var(--cpr-color-near-black);
+  --cpr-text-chat-failure: #b90202;
+  --cpr-text-chat-success: var(--er2070-green-dark);
+  --cpr-text-mook-normal: var(--cpr-color-near-black);
+  --cpr-text-foundry-input: var(--er2070-black);
+  --cpr-text-foundry-hint: var(--cpr-color-near-black);
+  --cpr-text-foundry-hover: var(--er2070-green-dark);
+  --cpr-text-hint: var(--cpr-color-near-black);
+  --cpr-text-editor-header: var(--er2070-black);
+  --cpr-text-editor-button: var(--er2070-black);
+  --cpr-text-dir-list: var(--er2070-white);
+  --cpr-icon-actor-image-overlay: var(--er2070-white);
+  --cpr-icon-actor-image-overlay-border: var(--er2070-green);
+}
+/* El modo oscuro de RED también cambia estas variables de Foundry: se devuelven a las del modo claro. */
+html.er2070-theme[data-cpr-theme="darkmode"] {
+  --color-border-light-primary: #b5b3a4;
+  --color-border-light-1: #dddddd;
+  --color-shadow-primary: #ff0000;
+}
+
+/* ------------------------------------------------------------------ degradados (solo fondo) */
+html.er2070-theme .actor-sheet .left-pane .actor-details,
+html.er2070-theme .actor-sheet .left-pane .actor-details-image,
+html.er2070-theme .actor-sheet .left-pane .actor-stats,
+html.er2070-theme .skills-tab .skills-container,
+html.er2070-theme .fight-tab,
+html.er2070-theme .blackice-sheet,
+html.er2070-theme .blackice-sheet .blackice-stats,
+html.er2070-theme .container-sheet,
+html.er2070-theme [id^="CPRDemonActorSheet"] .demon-sheet,
+html.er2070-theme .item-sheet .item-top-pane,
+html.er2070-theme .item-description-tab,
+html.er2070-theme .ledger-grid,
+html.er2070-theme .mook-sheet,
+html.er2070-theme .tab-pink-underlay {
+  background-image: var(--er2070-gradient);
+}
+/* Marcos de sección: el mismo ancho de borde, ahora con degradado. */
+html.er2070-theme .actor-sheet .right-pane .right-content-section,
+html.er2070-theme .actor-sheet .bottom-pane .bottom-content-section,
+html.er2070-theme .item-sheet .item-bottom-pane .item-bottom-content-section {
+  border-image: var(--er2070-gradient) 1;
+}
+/* Pestaña activa: degradado con texto negro, como los rótulos de la hoja del kit. */
+html.er2070-theme .tab-label.active {
+  background-image: var(--er2070-gradient);
+  color: var(--er2070-black);
+}
+html.er2070-theme .tab-label.active .tab-highlight { color: var(--er2070-black); }
+
+/* ------------------------------------------------------------------ tipografía */
+/* Hojas en las que RED fija la familia por nombre. */
+html.er2070-theme .container-sheet,
+html.er2070-theme .item-sheet,
+html.er2070-theme .ledger-grid,
+html.er2070-theme .mook-sheet,
+html.er2070-theme .mook-sheet-limited {
+  font-family: var(--cpr-font-primary);
+}
+/* Rótulos de sección y pestañas en versión condensada (misma altura de mayúsculas que Jost). */
+html.er2070-theme .section-name,
+html.er2070-theme .items-header,
+html.er2070-theme .tab-label,
+html.er2070-theme .dialog-item-header,
+html.er2070-theme .er2070-console h3 {
+  font-family: var(--er2070-font-label);
+  letter-spacing: 0.02em;
+}
+/* Las imágenes por defecto de los objetos son blancas: un contorno fino las mantiene visibles sobre el blanco. */
+html.er2070-theme .weapon-image img,
+html.er2070-theme .injuries-image img,
+html.er2070-theme .effect-image img,
+html.er2070-theme .actor-sheet .item img,
+html.er2070-theme .mook-sheet .item img {
+  filter: drop-shadow(0 0 0.06rem rgba(0, 0, 0, 0.9)) drop-shadow(0 0 0.06rem rgba(0, 0, 0, 0.6));
+}
+
+/* ------------------------------------------------------------------ consolas y chat del módulo */
+html.er2070-theme .er2070-console .window-content {
+  background: var(--er2070-white);
+  color: var(--er2070-black);
+}
+html.er2070-theme .er2070-console h3 {
+  border-bottom: 2px solid transparent;
+  border-image: var(--er2070-gradient) 1;
+}
+html.er2070-theme .er2070-console button,
+html.er2070-theme .er2070-chat button {
+  background: var(--er2070-black);
+  color: var(--er2070-white);
+  border-color: var(--er2070-green);
+}
+html.er2070-theme .er2070-console button:hover:not(:disabled),
+html.er2070-theme .er2070-chat button:hover:not(:disabled) {
+  background-image: var(--er2070-gradient);
+  color: var(--er2070-black);
+  box-shadow: none;
+}
+html.er2070-theme .er2070-chat {
+  border-left: 3px solid transparent;
+  border-image: linear-gradient(180deg, var(--er2070-yellow), var(--er2070-green)) 1;
+  padding-left: 0.4rem;
+}

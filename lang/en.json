@@ -88,6 +88,10 @@
       "corporateMultiplier": {
         "name": "Suggested corporate purchase markup",
         "hint": "Multiplier proposed when configuring a shop as an authorized dealer. It only affects buying, not reselling."
+      },
+      "theme2070": {
+        "name": "2070 theme (Mission Kit sheets)",
+        "hint": "Applies to every player the yellow and green palette and the fonts inspired by the Mission Kit character sheets, on RED sheets, dialogs and chat cards and on the module consoles. It does not change the sheet layout. Only the GM can change it."
       }
     },
     "net": {
@@ -332,6 +336,14 @@
       "vendorHint": "Multiplies the price buyers pay at this shop (authorized dealer: ×{corporate}). It does not change the item price nor what is paid on resale. 1 = no markup.",
       "vendorMultiplier": "Multiplier",
       "vendorSaved": "Markup of {actor}: ×{mult}."
+    },
+    "security": {
+      "denied": "Request from {user} rejected: {what} ({reason}).",
+      "confirmUnverified": "{user} requests “{name}” on {actor}, but the module could not verify the context ({reason}). Apply?",
+      "confirmInjury": "{user} chooses the critical injury {injury} for {actor}. Apply it?",
+      "noContext": "no full connection to the target or insufficient rank",
+      "suspendedAll": "Edgerunners 2070: {count} module effect(s) suspended on deactivation.",
+      "restoredAll": "Edgerunners 2070: {count} module effect(s) restored."
     }
   }
 }

@@ -1,5 +1,5 @@
 import { MODULE_ID, SCHEMA_VERSION, CAPABILITIES, validate, migrate, getCapabilities } from "./schema.js";
-import { registerEffectHooks, listenSocket } from "./effects.js";
+import { registerEffectHooks, listenSocket, suspendAllCarriers, restoreSuspendedCarriers } from "./effects.js";
 import { registerNetHooks } from "./net.js";
 import { registerGearHooks } from "./gear.js";
 import { registerLifeHooks } from "./life.js";
@@ -55,19 +55,39 @@ Hooks.once("init", () => {
       requiresReload: false,
     });
   }
-  game.modules.get(MODULE_ID).api = { schemaVersion: SCHEMA_VERSION, validate, migrate, getCapabilities };
+  // Tema 2070: lo decide el DJ (ajuste de mundo) y se aplica al momento en todos los clientes.
+  game.settings.register(MODULE_ID, "theme2070", {
+    name: "EDGERUNNERS2070.settings.theme2070.name",
+    hint: "EDGERUNNERS2070.settings.theme2070.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    requiresReload: false,
+    onChange: applyTheme,
+  });
+  game.modules.get(MODULE_ID).api = { schemaVersion: SCHEMA_VERSION, validate, migrate, getCapabilities, suspendAllCarriers, restoreSuspendedCarriers };
 });
+
+/** Activa o desactiva el tema 2070 (clase en <html>; el CSS solo actúa con ella). */
+function applyTheme(enabled) {
+  document.documentElement.classList.toggle("er2070-theme", Boolean(enabled));
+}
 
 // Los envoltorios de libWrapper se registran cuando RED ya ha configurado sus clases.
 Hooks.once("setup", () => {
   if (game.system.id !== RED_ID) return;
+  applyTheme(game.settings.get(MODULE_ID, "theme2070"));
   registerEffectHooks();
   registerNetHooks();
   registerGearHooks();
   registerLifeHooks();
 });
 Hooks.once("ready", () => {
-  if (game.system.id === RED_ID) listenSocket();
+  if (game.system.id !== RED_ID) return;
+  listenSocket();
+  // Efectos suspendidos al desactivar el módulo: se restauran al volver a activarlo (R05).
+  if (game.user === game.users.activeGM) restoreSuspendedCarriers();
 });
 
 /** Traduce un mensaje de validación. */
