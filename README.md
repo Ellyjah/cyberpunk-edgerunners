@@ -27,8 +27,9 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.4.0 (M6 — Humanidad, drogas, roles y economía)
+## Estado actual: 0.4.1 (M3–M6 completos; corrección de empates contra VD)
 
+- **0.4.1:** todas las tiradas contra VD del módulo (cortafuegos, brechas, hackeos, segundo intento, efecto secundario) siguen la regla de RED: hay que superar la VD; el empate falla.
 - **Requisitos:** Foundry V12 (verificado 12.343), sistema `cyberpunk-red-core` (verificado v0.92.4) y módulo `lib-wrapper`.
 - **Capacidades (M3):** pestaña **2070** en la hoja de cualquier Item con las capacidades detectadas y su validación; editor JSON (solo DJ) que valida antes de guardar.
 - **Netrunning (M4):** botón **Red 2070** en la cabecera de la hoja de personaje o PNJ, que abre una consola con:

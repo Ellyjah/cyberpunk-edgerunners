@@ -4,7 +4,7 @@
  * ciberequipo, Humanidad máxima, penalización por estado de heridas y tiradas de característica.
  */
 import { MODULE_ID, getCapabilities } from "./schema.js";
-import { shotPlan, effectiveStat, evaluateCondition, retryAllowed, unarmedDamage, ignoreArmorFromMultiplier, firingChamber, attackMode, stackSatisfied } from "./rules.js";
+import { shotPlan, effectiveStat, evaluateCondition, retryAllowed, beatsDv, unarmedDamage, ignoreArmorFromMultiplier, firingChamber, attackMode, stackSatisfied } from "./rules.js";
 import { L, esc, gmExec, registerHandler, resolveActor, actorCapabilities, chat, createCarrier, carriersOf, applyOperations } from "./effects.js";
 import { countInterfaceRoll } from "./net.js";
 
@@ -364,7 +364,7 @@ async function doRetry(message) {
   const total = retry.base + die.total + form.luck + retry.penalties;
   if (form.luck) await actor.update({ "system.stats.luck.value": luckMax - form.luck });
   await chat(actor, `<p>${L("gear.retryResult", { total, dv: form.dv, base: retry.base, die: die.total, luck: form.luck, penalties: retry.penalties })}</p>
-    <p><strong>${L(total >= form.dv ? "gear.hit" : "gear.miss")}</strong></p>`, { rolls: die.rolls });
+    <p><strong>${L(beatsDv(total, form.dv) ? "gear.hit" : "gear.miss")}</strong></p>`, { rolls: die.rolls });
 }
 
 function postCritChoose(actor, item, rolls, targets, location) {

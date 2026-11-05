@@ -61,7 +61,9 @@ test("Condiciones: simples, compuestas y desconocidas", () => {
 test("Segundo intento solo con fallo por margen permitido", () => {
   assert.equal(retryAllowed(10, 13, 3), true);
   assert.equal(retryAllowed(9, 13, 3), false);
-  assert.equal(retryAllowed(13, 13, 3), false);
+  // En RED el empate lo gana el defensor: igualar la VD es fallar por 0.
+  assert.equal(retryAllowed(13, 13, 3), true);
+  assert.equal(retryAllowed(14, 13, 3), false);
 });
 
 test("Daño desarmado por TCO", () => {

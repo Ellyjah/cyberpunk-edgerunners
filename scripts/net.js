@@ -3,7 +3,7 @@
  * expulsión, desconexión y contador de acciones NET.
  */
 import { MODULE_ID, getCapabilities } from "./schema.js";
-import { netActionsForRank, parseDvList, neuroArchitecture, redD10, attackerWins, firewallRequired, quickhackBlocked, netActionBonus } from "./rules.js";
+import { netActionsForRank, parseDvList, neuroArchitecture, redD10, attackerWins, firewallRequired, quickhackBlocked, netActionBonus, beatsDv } from "./rules.js";
 import { L, esc, gmExec, registerHandler, resolveActor, actorCapabilities, chat, getTurn, saveTurn, combatantOf, sameActor, chooseItems, eligibleItems } from "./effects.js";
 
 const setting = (key) => game.settings.get(MODULE_ID, key);
@@ -149,7 +149,7 @@ async function connect(actor, ownToken, mode) {
   if (firewallRequired(rank, setting("firewallAutoRank"))) {
     const fw = await interfaceRoll(actor);
     rolls.push(...fw.rolls);
-    const passed = fw.value >= setting("firewallDv");
+    const passed = beatsDv(fw.value, setting("firewallDv"));
     lines.push(L("net.firewall", { value: fw.value, dv: setting("firewallDv") }) + critText(fw) + " — " + L(passed ? "net.success" : "net.failure"));
     if (!passed) {
       lines.push(L("net.firewallFail"));
@@ -193,7 +193,7 @@ async function breach(actor, index) {
   if (floor?.kind !== "barrier") return;
   await countNetAction(actor);
   const r = await interfaceRoll(actor);
-  const ok = r.value >= floor.dv;
+  const ok = beatsDv(r.value, floor.dv);
   if (ok) conn.floor += 1;
   await saveNet(actor, state);
   await chat(actor, `<p>${L("net.breach", { actor: esc(actor.name), target: esc(target.name), value: r.value, dv: floor.dv })}${critText(r)} — ${L(ok ? "net.success" : "net.failure")}</p>`, { rolls: r.rolls });
@@ -266,7 +266,7 @@ async function quickhack(actor, index) {
   }
   if (luck) await actor.update({ "system.stats.luck.value": actor.system.stats.luck.value - luck });
   const r = await interfaceRoll(actor, mod + luck);
-  const ok = r.value >= cap.dv;
+  const ok = beatsDv(r.value, cap.dv);
   const name = cap.label ?? item.name;
   await chat(actor, `<p>${L("net.hackRoll", { actor: esc(actor.name), name: esc(name), target: esc(target.name), value: r.value, dv: cap.dv })}${critText(r)} — ${L(ok ? "net.success" : "net.failure")}</p>`, { rolls: r.rolls });
   if (!ok) return;

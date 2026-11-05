@@ -156,9 +156,9 @@ export function evaluateCondition(cond, facts, scope) {
   }
 }
 
-/** ¿Permite el segundo intento? Solo si falló por un margen no mayor que `maxMargin`. */
+/** ¿Permite el segundo intento? Solo si falló (no superó la VD; el empate falla) por un margen no mayor que `maxMargin`. */
 export function retryAllowed(result, dv, maxMargin) {
-  return result < dv && dv - result <= maxMargin;
+  return result <= dv && dv - result <= maxMargin;
 }
 
 /** Daño desarmado de RED según TCO (con ciberbrazo fundacional, el desarmado con TCO ≤ 4 hace 2d6). */
