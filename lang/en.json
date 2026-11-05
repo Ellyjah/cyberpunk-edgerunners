@@ -80,6 +80,14 @@
       "cableDistance": {
         "name": "Maximum cable connection distance (m)",
         "hint": "Beyond it the cable pulls out and the disconnection is forced."
+      },
+      "roleAcquisition": {
+        "name": "Acquisition by role ability (JSON)",
+        "hint": "List of rules { ability, rank, maxCategory, types, note } that tell, on purchase, whether a role can get an unavailable item. It does not block: the GM decides."
+      },
+      "corporateMultiplier": {
+        "name": "Suggested corporate purchase markup",
+        "hint": "Multiplier proposed when configuring a shop as an authorized dealer. It only affects buying, not reselling."
       }
     },
     "net": {
@@ -189,7 +197,8 @@
       "humanityGain": "{name}: {actor} regains {amount} Humanity (now {total}).",
       "humanityLossLedger": "Lost {amount} Humanity (Edgerunners 2070); total {total}",
       "humanityGainLedger": "Regained {amount} Humanity (Edgerunners 2070); total {total}",
-      "cyberpsychosis": "{actor} is at 0 Humanity or less: cyberpsychosis. The GM decides."
+      "cyberpsychosis": "{actor} is at 0 Humanity or less: cyberpsychosis. The GM decides.",
+      "onExpireStart": "{name}: {actor} has a pending effect that applies when it ends. If it is avoided, remove the effect from the sheet."
     },
     "gear": {
       "console": "Gear 2070",
@@ -287,6 +296,42 @@
         "wieldWeapon": "wielding weapons",
         "forceObject": "forcing objects"
       }
+    },
+    "life": {
+      "drugEffect": "{name} (effect)",
+      "drugTaken": "{actor} takes {name}.",
+      "drugTakenSecondary": "{actor} takes {name}. When the primary effect ends they roll against the secondary effect (DV {dv}).",
+      "drugProlonged": "{actor} takes another dose of {name}: the primary effect is prolonged.",
+      "secondaryRoll": "Secondary effect of {name} ({actor}): {total} against DV {dv} (stat {stat} + skill {level} + 1d10 {die}).",
+      "secondaryPass": "Beaten: no secondary effect.",
+      "secondaryFail": "Not beaten: the secondary effect applies.",
+      "humanityButton": "Humanity 2070",
+      "humanityTitle": "Humanity 2070 · {actor}",
+      "humanityNow": "Current Humanity: {value} (maximum {max}).",
+      "incidentHeader": "Incident",
+      "loss": "Loss",
+      "gain": "Gain",
+      "reason": "Reason (kept in the Humanity ledger)",
+      "applyIncident": "Apply incident",
+      "incidentLoss": "Humanity loss incident",
+      "incidentGain": "Humanity gain incident",
+      "monthlyHeader": "Monthly evaluation",
+      "monthlyHint": "At the start of the month, after paying for lifestyle: enter how many long-term environmental effects of each severity apply. Losses are applied first, then gains, without exceeding the maximum.",
+      "lossEffects": "Loss effects",
+      "gainEffects": "Gain effects",
+      "goodLife": "Good life: +3d6 (proposed with 4 or more gain effects and fewer than 3 loss effects)",
+      "applyMonthly": "Apply evaluation",
+      "monthlyReason": "Monthly Humanity evaluation",
+      "nothingToApply": "Nothing to apply.",
+      "lastMonthly": "Last evaluation: loss {loss}, gain {gain} ({date}).",
+      "badAcquisition": "The role acquisition setting is not valid JSON: it is ignored.",
+      "acquisitionYes": "{actor} can get {name} ({category}) one at a time even if unavailable: {abilities}.",
+      "acquisitionNo": "No role ability of {actor} allows getting {name} ({category}) if it is unavailable. The GM decides.",
+      "vendorButton": "Markup 2070",
+      "vendorTitle": "Purchase markup · {actor}",
+      "vendorHint": "Multiplies the price buyers pay at this shop (authorized dealer: ×{corporate}). It does not change the item price nor what is paid on resale. 1 = no markup.",
+      "vendorMultiplier": "Multiplier",
+      "vendorSaved": "Markup of {actor}: ×{mult}."
     }
   }
 }

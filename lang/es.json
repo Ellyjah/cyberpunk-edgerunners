@@ -80,6 +80,14 @@
       "cableDistance": {
         "name": "Distancia máxima de la conexión por cable (m)",
         "hint": "Si se supera, el cable se suelta y la desconexión es forzosa."
+      },
+      "roleAcquisition": {
+        "name": "Adquisición por aptitud de rol (JSON)",
+        "hint": "Lista de reglas { ability, rank, maxCategory, types, note } que avisan al comprar si un rol puede conseguir un artículo no disponible. No bloquea: decide el DJ."
+      },
+      "corporateMultiplier": {
+        "name": "Recargo de compra corporativa sugerido",
+        "hint": "Multiplicador que se propone al configurar una tienda como distribuidor autorizado. Solo afecta a la compra, no a la reventa."
       }
     },
     "net": {
@@ -189,7 +197,8 @@
       "humanityGain": "{name}: {actor} recupera {amount} de Humanidad (queda en {total}).",
       "humanityLossLedger": "Pérdida de {amount} de Humanidad (Edgerunners 2070); total {total}",
       "humanityGainLedger": "Recuperación de {amount} de Humanidad (Edgerunners 2070); total {total}",
-      "cyberpsychosis": "{actor} tiene la Humanidad en 0 o menos: ciberpsicosis. El DJ decide."
+      "cyberpsychosis": "{actor} tiene la Humanidad en 0 o menos: ciberpsicosis. El DJ decide.",
+      "onExpireStart": "{name}: {actor} tiene un efecto pendiente que se aplicará al terminar. Si se evita, retira el efecto de la ficha."
     },
     "gear": {
       "console": "Equipo 2070",
@@ -287,6 +296,42 @@
         "wieldWeapon": "manejar armas",
         "forceObject": "forzar objetos"
       }
+    },
+    "life": {
+      "drugEffect": "{name} (efecto)",
+      "drugTaken": "{actor} consume {name}.",
+      "drugTakenSecondary": "{actor} consume {name}. Al terminar el efecto principal tirará contra el efecto secundario (VD {dv}).",
+      "drugProlonged": "{actor} toma otra dosis de {name}: el efecto principal se prolonga.",
+      "secondaryRoll": "Efecto secundario de {name} ({actor}): {total} contra VD {dv} (característica {stat} + habilidad {level} + 1d10 {die}).",
+      "secondaryPass": "Lo supera: no sufre el efecto secundario.",
+      "secondaryFail": "No lo supera: sufre el efecto secundario.",
+      "humanityButton": "Humanidad 2070",
+      "humanityTitle": "Humanidad 2070 · {actor}",
+      "humanityNow": "Humanidad actual: {value} (máximo {max}).",
+      "incidentHeader": "Incidente",
+      "loss": "Pérdida",
+      "gain": "Ganancia",
+      "reason": "Motivo (queda en el registro de Humanidad)",
+      "applyIncident": "Aplicar incidente",
+      "incidentLoss": "Incidente de pérdida de Humanidad",
+      "incidentGain": "Incidente de ganancia de Humanidad",
+      "monthlyHeader": "Evaluación mensual",
+      "monthlyHint": "Al empezar el mes, tras pagar el estilo de vida: indica cuántos efectos ambientales prolongados de cada gravedad se cumplen. Se aplican primero las pérdidas y después las ganancias, sin superar el máximo.",
+      "lossEffects": "Efectos de pérdida",
+      "gainEffects": "Efectos de ganancia",
+      "goodLife": "Buena vida: +3d6 (se propone con 4 o más efectos de ganancia y menos de 3 de pérdida)",
+      "applyMonthly": "Aplicar evaluación",
+      "monthlyReason": "Evaluación mensual de Humanidad",
+      "nothingToApply": "No hay nada que aplicar.",
+      "lastMonthly": "Última evaluación: pérdida {loss}, ganancia {gain} ({date}).",
+      "badAcquisition": "El ajuste de adquisición por rol no es un JSON válido: se ignora.",
+      "acquisitionYes": "{actor} puede conseguir {name} ({category}) de uno en uno aunque no esté disponible: {abilities}.",
+      "acquisitionNo": "Ninguna aptitud de rol de {actor} permite conseguir {name} ({category}) si no está disponible. Decide el DJ.",
+      "vendorButton": "Recargo 2070",
+      "vendorTitle": "Recargo de compra · {actor}",
+      "vendorHint": "Multiplica el precio que pagan los compradores en esta tienda (distribuidor autorizado: ×{corporate}). No cambia el precio del objeto ni lo que se cobra al revender. 1 = sin recargo.",
+      "vendorMultiplier": "Multiplicador",
+      "vendorSaved": "Recargo de {actor}: ×{mult}."
     }
   }
 }

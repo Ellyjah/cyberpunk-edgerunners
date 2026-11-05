@@ -103,6 +103,9 @@ export async function createCarrier(target, ctx, { changes = [], duration, timed
   return effect;
 }
 
+/** Funciones de otros archivos que actúan al caducar un portador: (actor, effect, timed) => Promise. */
+export const expireHandlers = [];
+
 // Foundry lanza a la vez updateCombat y updateWorldTime al cambiar de asalto: evita retirar dos veces.
 const expiring = new Set();
 
@@ -121,6 +124,11 @@ export async function expireCarrier(effect) {
       const item = actor.items.get(id);
       if (item) steps.push(() => item.setFlag(MODULE_ID, "suspendedBy", (item.getFlag(MODULE_ID, "suspendedBy") ?? []).filter((e) => e !== effect.id)));
     }
+    // Operaciones diferidas (`on-expire`): se aplican al caducar, no si alguien retira el efecto a mano.
+    if (timed.onExpire?.operations?.length) {
+      steps.push(() => applyOperations({ targetUuid: actor.uuid, sourceUuid: timed.source, sourceActorUuid: timed.sourceActor, label: effect.name, operations: timed.onExpire.operations }));
+    }
+    for (const handler of expireHandlers) steps.push(() => handler(actor, effect, timed));
     // Al terminar una activación empieza su enfriamiento.
     if (timed.activation?.cooldown) {
       steps.push(() => createCarrier(actor, { label: L("gear.cooldownName", { name: timed.activation.name }), sourceUuid: timed.source },
@@ -278,24 +286,40 @@ const OPS = {
     const hum = target.system.derivedStats?.humanity;
     if (!hum) return;
     const loss = op.sign === "loss";
-    let value = (Number.isInteger(hum.value) ? hum.value : hum.max) + (loss ? -roll.total : roll.total);
-    if (!loss && op.respectMax !== false) value = Math.min(value, hum.max);
-    const sentence = L(loss ? "effects.humanityLossLedger" : "effects.humanityGainLedger", { amount: roll.total, total: value });
+    const before = Number.isInteger(hum.value) ? hum.value : hum.max;
+    let value = before + (loss ? -roll.total : roll.total);
+    // Las ganancias no superan la Humanidad máxima de RED (la que permite la terapia).
+    if (!loss && op.respectMax !== false) value = Math.max(before, Math.min(value, hum.max));
+    const amount = Math.abs(value - before);
+    const sentence = L(loss ? "effects.humanityLossLedger" : "effects.humanityGainLedger", { amount, total: value });
     // Registro nativo de RED (derivedStats.humanity.transactions); la Humanidad máxima no cambia.
     await target.update({
       "system.derivedStats.humanity.value": value,
       "system.derivedStats.humanity.transactions": [...(hum.transactions ?? []), [sentence, ctx.label]],
     });
     await target.setMaxHumanity?.();
-    if (loss) ctx.lastHumanityLoss = roll.total;
+    if (loss) ctx.lastHumanityLoss = amount;
+    ctx.humanityDelta = (ctx.humanityDelta ?? 0) + value - before;
     const note = value <= 0 ? `<p><strong>${L("effects.cyberpsychosis", { actor: esc(target.name) })}</strong></p>` : "";
-    await chat(target, `<p>${L(loss ? "effects.humanityLoss" : "effects.humanityGain", { name: esc(ctx.label), actor: esc(target.name), amount: roll.total, total: value })}</p>${note}`, { rolls: [roll] });
+    await chat(target, `<p>${L(loss ? "effects.humanityLoss" : "effects.humanityGain", { name: esc(ctx.label), actor: esc(target.name), amount, total: value })}</p>${note}`, { rolls: [roll] });
   },
 
   // Con Humanidad negativa, daño directo igual a la pérdida de la operación `humanity` anterior.
   "self-damage-from-humanity": async (target, op, ctx) => {
     const value = target.system.derivedStats?.humanity?.value ?? 0;
     if (value < 0 && ctx.lastHumanityLoss) await directDamage(target, String(ctx.lastHumanityLoss), ctx.label);
+  },
+
+  // Deshace el cambio neto de Humanidad que registró el portador (p. ej., una droga): `ctx.revertDelta`.
+  "humanity-revert": async (target, op, ctx) => {
+    const delta = ctx.revertDelta ?? 0;
+    if (!delta) return;
+    await OPS.humanity(target, { formula: String(Math.abs(delta)), sign: delta > 0 ? "loss" : "gain", respectMax: true }, ctx);
+  },
+
+  "on-expire": async (target, op, ctx) => {
+    await createCarrier(target, ctx, { duration: op.duration, timed: { onExpire: { operations: op.operations ?? [] } }, img: "icons/svg/hazard.svg" });
+    await chat(target, L("effects.onExpireStart", { name: esc(ctx.label), actor: esc(target.name) }), { whisper: ownersOf(target) });
   },
 
   "ignore-wound-state": (target, op, ctx) =>
@@ -320,7 +344,7 @@ export async function applyOperations(data) {
     const ok = await Dialog.confirm({ title: data.label, content: `<p>${L("effects.confirm", { name: esc(data.label), actor: esc(target.name) })}</p>` });
     if (!ok) return chat(target, L("effects.vetoed", { name: esc(data.label) }), { whisper: ownersOf(target) });
   }
-  const ctx = { label: data.label, sourceUuid: data.sourceUuid, sourceActorUuid: data.sourceActorUuid, sourceName: data.sourceName };
+  const ctx = { ...(data.context ?? {}), label: data.label, sourceUuid: data.sourceUuid, sourceActorUuid: data.sourceActorUuid, sourceName: data.sourceName };
   for (const [i, op] of (data.operations ?? []).entries()) {
     const fn = OPS[op.op];
     if (!fn) {
@@ -329,6 +353,7 @@ export async function applyOperations(data) {
     }
     await fn(target, op, ctx, data.picks?.[i]);
   }
+  return ctx;
 }
 registerHandler("applyOperations", applyOperations);
 

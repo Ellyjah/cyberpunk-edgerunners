@@ -2,6 +2,7 @@ import { MODULE_ID, SCHEMA_VERSION, CAPABILITIES, validate, migrate, getCapabili
 import { registerEffectHooks, listenSocket } from "./effects.js";
 import { registerNetHooks } from "./net.js";
 import { registerGearHooks } from "./gear.js";
+import { registerLifeHooks } from "./life.js";
 
 const RED_ID = "cyberpunk-red-core";
 const TAB = "edgerunners-2070";
@@ -25,6 +26,19 @@ const SETTINGS = {
   rangePortNet: { type: Number, default: 20 },
   rangePortNeuroport: { type: Number, default: 50 },
   cableDistance: { type: Number, default: 2 },
+  // M6: adquisición por aptitud de rol (aviso, no bloquea) y recargo corporativo sugerido.
+  roleAcquisition: { type: String, default: JSON.stringify([
+    { ability: "Operator", rank: 1, maxCategory: "expensive" },
+    { ability: "Operator", rank: 4, maxCategory: "veryExpensive" },
+    { ability: "Operator", rank: 7, maxCategory: "luxury" },
+    { ability: "Operator", rank: 9, maxCategory: "superLuxury" },
+    { ability: "Teamwork", rank: 4, maxCategory: "expensive" },
+    { ability: "Credibility", rank: 4, maxCategory: "expensive" },
+    { ability: "Charismatic Impact", rank: 4, maxCategory: "expensive" },
+    { ability: "Backup", rank: 4, maxCategory: "expensive", note: "relacionado con su trabajo" },
+    { ability: "Moto", rank: 1, types: ["vehicle", "itemUpgrade:vehicle"] },
+  ]) },
+  corporateMultiplier: { type: Number, default: 2 },
 };
 
 Hooks.once("init", () => {
@@ -50,6 +64,7 @@ Hooks.once("setup", () => {
   registerEffectHooks();
   registerNetHooks();
   registerGearHooks();
+  registerLifeHooks();
 });
 Hooks.once("ready", () => {
   if (game.system.id === RED_ID) listenSocket();

@@ -24,6 +24,9 @@ const OPERATIONS = {
   "extra-action": { kind: "enum:move|any", count: "int" },
   "self-damage-from-humanity": {},
   "ignore-wound-state": { states: "list", keepDeathSaves: "bool", duration: "duration" },
+  // M6: deshace el cambio de Humanidad de una droga; aplica operaciones al caducar.
+  "humanity-revert": {},
+  "on-expire": { duration: "duration!", operations: "operations!" },
 };
 
 const CONDITIONS = {
@@ -212,6 +215,10 @@ export function validate(itemOrData) {
       else cap.requires.forEach((c, j) => checkEntry(CONDITIONS, "type", c, `${path}.requires[${j}]`, out, "unknownCondition"));
     }
     checkParams(def.params, cap, path, out, COMMON);
+    // Efecto secundario de droga: { dv, skill, onFail[], onPass[] }.
+    if (cap.type === "drug" && isObj(cap.secondary)) {
+      checkParams({ dv: "int!", skill: "string", onFail: "operations", onPass: "operations" }, cap.secondary, `${path}.secondary`, out);
+    }
   });
   return { ok: out.errors.length === 0, ...out };
 }

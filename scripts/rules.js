@@ -185,3 +185,59 @@ export function firingChamber(chambers, active = 0) {
 export function attackMode(className) {
   return { CPRAimedAttackRoll: "aimed", CPRAutofireRoll: "autofire", CPRSuppressiveFireRoll: "suppressive", CPRAttackRoll: "single" }[className] ?? null;
 }
+
+// ---------------------------------------------------------------- Humanidad, roles y economía (M6)
+
+// Categorías de precio de RED (precio de mercado de referencia de cada una).
+export const PRICE_TIERS = [["free", 0], ["dirtCheap", 5], ["cheap", 10], ["everyday", 20], ["costly", 50], ["premium", 100], ["expensive", 500], ["veryExpensive", 1000], ["luxury", 5000], ["superLuxury", 10000]];
+const tierIndex = (key) => PRICE_TIERS.findIndex(([k]) => k === key);
+
+/** Categoría de un precio: la más alta cuyo precio de referencia no supera el precio dado. */
+export function priceCategory(market) {
+  let found = PRICE_TIERS[0][0];
+  for (const [key, min] of PRICE_TIERS) if (market >= min) found = key;
+  return found;
+}
+
+/** ¿Es la categoría `a` igual o superior a `b`? */
+export const categoryAtLeast = (a, b) => tierIndex(a) >= tierIndex(b);
+
+/**
+ * Aptitudes de rol que permiten conseguir un artículo de uno en uno aunque no esté disponible.
+ * @param {object[]} rules - [{ ability, rank, maxCategory?, types?, note? }]
+ * @param {object[]} roles - [{ ability, rank }] del comprador
+ * @param {object} item - { category, kind } (kind = "tipo" o "tipo:subtipo")
+ */
+export function acquisitionMatches(rules, roles, item) {
+  return rules.filter((r) => {
+    const role = roles.find((x) => slugAbility(x.ability) === slugAbility(r.ability));
+    if (!role || role.rank < r.rank) return false;
+    if (r.types && !r.types.some((t) => t === item.kind || t === item.kind.split(":")[0])) return false;
+    if (r.maxCategory && !categoryAtLeast(r.maxCategory, item.category)) return false;
+    return true;
+  });
+}
+const slugAbility = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+/** Precio de compra en una tienda con recargo (redondeado al eurodólar). */
+export function buyPrice(market, multiplier) {
+  const m = Number(multiplier);
+  return Number.isFinite(m) && m > 0 ? Math.round(market * m) : market;
+}
+
+/**
+ * Evaluación mensual de Humanidad: fórmulas de pérdida y ganancia según los efectos ambientales.
+ * @param {object} counts - { loss: [n1d6, n2d6, n3d6], gain: [n1d6, n2d6], goodLife: bool|undefined }
+ * Sin indicar goodLife, se concede la ganancia de 3d6 si hay 4 o más efectos de ganancia y menos de 3 de pérdida.
+ */
+export function monthlyHumanity({ loss = [0, 0, 0], gain = [0, 0], goodLife } = {}) {
+  const dice = (counts) => counts.map((n, i) => (n > 0 ? `${n * (i + 1)}d6` : null)).filter(Boolean).join(" + ");
+  const lossCount = loss.reduce((a, b) => a + b, 0);
+  const gainCount = gain.reduce((a, b) => a + b, 0);
+  const good = goodLife ?? (gainCount >= 4 && lossCount < 3);
+  const gainFormula = [dice(gain), good ? "3d6" : null].filter(Boolean).join(" + ");
+  return { loss: dice(loss) || null, gain: gainFormula || null, goodLife: good, lossCount, gainCount };
+}
+
+/** Tirada enfrentada contra una VD: hay que superarla (el empate lo gana la VD). */
+export const beatsDv = (total, dv) => total > dv;
