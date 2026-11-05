@@ -1,4 +1,6 @@
 import { MODULE_ID, SCHEMA_VERSION, CAPABILITIES, validate, migrate, getCapabilities } from "./schema.js";
+import { registerEffectHooks, listenSocket } from "./effects.js";
+import { registerNetHooks } from "./net.js";
 
 const RED_ID = "cyberpunk-red-core";
 const TAB = "edgerunners-2070";
@@ -39,6 +41,16 @@ Hooks.once("init", () => {
     });
   }
   game.modules.get(MODULE_ID).api = { schemaVersion: SCHEMA_VERSION, validate, migrate, getCapabilities };
+});
+
+// Los envoltorios de libWrapper se registran cuando RED ya ha configurado sus clases.
+Hooks.once("setup", () => {
+  if (game.system.id !== RED_ID) return;
+  registerEffectHooks();
+  registerNetHooks();
+});
+Hooks.once("ready", () => {
+  if (game.system.id === RED_ID) listenSocket();
 });
 
 /** Traduce un mensaje de validación. */

@@ -2,7 +2,7 @@
   "EDGERUNNERS2070": {
     "tab": "2070",
     "panel": {
-      "hint": "Generic 2070s capabilities configured on this item. They are not applied in play yet.",
+      "hint": "Generic 2070s capabilities configured on this item. Quickhacks are used from the \"Net 2070\" button on the actor sheet.",
       "empty": "This item has no configured capabilities.",
       "edit": "Edit capabilities"
     },
@@ -35,22 +35,156 @@
       "unknownCondition": "{path}: unknown condition \"{value}\"."
     },
     "settings": {
-      "neuroportRequired": { "name": "Require neuroport", "hint": "Non-medical cyberware needs an installed neuroport." },
+      "neuroportRequired": {
+        "name": "Require neuroport",
+        "hint": "Non-medical cyberware needs an installed neuroport."
+      },
       "actionCounter": {
         "name": "Per-turn action counter",
         "hint": "Automatic: counts NET actions and warns when exceeding the maximum. Reminder: only shows the maximum.",
         "auto": "Automatic",
         "reminder": "Visual reminder"
       },
-      "selfIceDv": { "name": "Self-ICE barrier DVs", "hint": "DV of every barrier by number of installed Self-ICE (1, 2, 3…), comma separated." },
-      "controlNodeDv": { "name": "Neuroport control node DV", "hint": "DV of the neuroport control node." },
-      "firewallDv": { "name": "Basic firewall DV", "hint": "Interface DV to bypass a neuroport's firewall." },
-      "firewallAutoRank": { "name": "Rank that bypasses the firewall", "hint": "Interface rank from which the basic firewall is bypassed automatically." },
-      "rangeExternal": { "name": "External cyberdeck range (m)", "hint": "Quickhack range with a traditional external cyberdeck." },
-      "rangeExternalHardware": { "name": "External cyberdeck range with hardware (m)", "hint": "Range with the hardware option that extends it." },
-      "rangePortNet": { "name": "Neuroport port range vs architectures (m)", "hint": "Range against normal NET architectures using the neuroport cyberdeck port." },
-      "rangePortNeuroport": { "name": "Neuroport port range vs neuroports (m)", "hint": "Range to connect to neuroports using the neuroport cyberdeck port." },
-      "cableDistance": { "name": "Maximum cable connection distance (m)", "hint": "Beyond it the cable pulls out and the disconnection is forced." }
+      "selfIceDv": {
+        "name": "Self-ICE barrier DVs",
+        "hint": "DV of every barrier by number of installed Self-ICE (1, 2, 3…), comma separated."
+      },
+      "controlNodeDv": {
+        "name": "Neuroport control node DV",
+        "hint": "DV of the neuroport control node."
+      },
+      "firewallDv": {
+        "name": "Basic firewall DV",
+        "hint": "Interface DV to bypass a neuroport's firewall."
+      },
+      "firewallAutoRank": {
+        "name": "Rank that bypasses the firewall",
+        "hint": "Interface rank from which the basic firewall is bypassed automatically."
+      },
+      "rangeExternal": {
+        "name": "External cyberdeck range (m)",
+        "hint": "Quickhack range with a traditional external cyberdeck."
+      },
+      "rangeExternalHardware": {
+        "name": "External cyberdeck range with hardware (m)",
+        "hint": "Range with the hardware option that extends it."
+      },
+      "rangePortNet": {
+        "name": "Neuroport port range vs architectures (m)",
+        "hint": "Range against normal NET architectures using the neuroport cyberdeck port."
+      },
+      "rangePortNeuroport": {
+        "name": "Neuroport port range vs neuroports (m)",
+        "hint": "Range to connect to neuroports using the neuroport cyberdeck port."
+      },
+      "cableDistance": {
+        "name": "Maximum cable connection distance (m)",
+        "hint": "Beyond it the cable pulls out and the disconnection is forced."
+      }
+    },
+    "net": {
+      "console": "Net 2070",
+      "consoleTitle": "Net 2070: {actor}",
+      "rank": "Interface rank: {rank}",
+      "actions": "NET actions this turn: {used}/{max}",
+      "actionsMax": "NET actions per turn: {max}",
+      "tooManyActions": "{used} NET actions used out of {max} this turn.",
+      "connectHeader": "Connect",
+      "connectionsHeader": "Connections",
+      "intrudersHeader": "Intruders in my neuroport",
+      "lockoutsHeader": "Lockouts (cannot reconnect)",
+      "currentTarget": "Targeted: {target}",
+      "noTarget": "Target a token (T key) to connect.",
+      "none": "None.",
+      "connectRemote": "Connect remotely",
+      "connectCable": "Connect by cable",
+      "mode": {
+        "remote": "remote",
+        "cable": "by cable"
+      },
+      "isAlerted": "target is aware",
+      "isUnaware": "target is unaware",
+      "selfTarget": "You cannot hack your own neuroport.",
+      "noNeuroport": "{actor} has no neuroport: quickhacks are not possible.",
+      "noOwnToken": "Your character needs a token in the same scene as the target.",
+      "alreadyConnected": "You are already connected to that target.",
+      "lockedOut": "Recent unsafe disconnection: you cannot try again for {minutes} min.",
+      "noCable": "A neuroport (interface plugs) is needed for a direct connection.",
+      "noDeck": "You need an equipped cyberdeck to connect remotely.",
+      "outOfRange": "Out of range: {distance} m (maximum {range} m).",
+      "noSight": "No line of sight: a wall is in the way.",
+      "cableCondition": "A cable connection is only possible if {actor} is unconscious, fully restrained or consents. Is that the case? The GM may veto it.",
+      "connectTry": "{actor} tries to connect to the neuroport of {target} ({mode}).",
+      "firewall": "Firewall: Interface {value} vs DV {dv}",
+      "firewallAuto": "Firewall bypassed automatically by rank.",
+      "firewallFail": "Fails to bypass the firewall. The target does not notice.",
+      "targetIsNetrunner": "The target is a netrunner: they always know when someone enters their neuroport.",
+      "cableAware": "Direct connection to a conscious target: they notice the hack.",
+      "cableUnaware": "The target is unconscious: they do not notice the connection.",
+      "stealthRoll": "Interface {att} vs WILL {def}",
+      "alerted": "the target notices the intrusion",
+      "unnoticed": "the target does not notice",
+      "cableSkips": "The direct connection skips {count} barrier(s); black ICE is not skipped.",
+      "connected": "Connected to {target}.",
+      "success": "success",
+      "failure": "failure",
+      "critSuccess": "critical",
+      "critFumble": "fumble",
+      "floor": {
+        "barrier": "Floor {n}: Self-ICE barrier, DV {dv}",
+        "blackice": "Floor {n}: black ICE \"{name}\" (resolve it with RED rules; the GM marks it as passed)",
+        "node": "Floor {n}: control node — quickhacks available",
+        "done": "Architecture cleared."
+      },
+      "breachBtn": "Breach",
+      "blackIceBtn": "Black ICE passed",
+      "hack": "Quickhack",
+      "disconnect": "Disconnect",
+      "expel": "Expel",
+      "breach": "{actor} tries to breach {target}: Interface {value} vs DV {dv}",
+      "quickhackTitle": "Quickhack against {target}",
+      "quickhack": "Hack",
+      "modifier": "Modifier",
+      "luck": "Luck to spend",
+      "dv": "DV",
+      "minRank": "rank",
+      "ok": "OK",
+      "noQuickhacks": "No quickhacks defined in the world (Items with the \"quickhack\" capability).",
+      "hackRoll": "{actor} runs \"{name}\" against {target}: Interface {value} vs DV {dv}",
+      "blocked": {
+        "notConnected": "You are not connected to that target.",
+        "rankTooLow": "Your Interface rank does not allow that hack.",
+        "floorsRemaining": "There are still floors to pass before the control node.",
+        "alreadyTried": "You already attempted a quickhack against this target this turn.",
+        "targetAware": "That hack only works if the target does not know you are connected."
+      },
+      "disconnected": "{actor} safely disconnects from {target}.",
+      "unsafe": "Unsafe disconnection of {actor} from the neuroport of {target} ({reason}). Usual RED consequences apply (black ICE met and not derezzed) and they cannot hack that target for 60 minutes.",
+      "reasonExpelled": "expelled",
+      "reasonRange": "out of range",
+      "reasonCable": "the cable came loose",
+      "expelRoll": "{actor} tries to expel {intruder}: WILL + Concentration {def} vs Interface {att}",
+      "expelled": "expelled",
+      "notExpelled": "still connected",
+      "noGM": "No GM is connected to apply the effect."
+    },
+    "effects": {
+      "confirm": "Apply \"{name}\" to {actor}?",
+      "vetoed": "The GM vetoed \"{name}\".",
+      "notImplemented": "Operation \"{op}\" is not implemented yet; apply it manually.",
+      "expired": "\"{name}\" ends on {actor}.",
+      "directDamage": "\"{name}\": {actor} takes {damage} direct damage to HP (ignores armor without ablating it).",
+      "alreadyMortal": "Already Mortally Wounded: per RED they automatically suffer a critical injury (roll it from the sheet).",
+      "noMove": "{actor} has MOVE 0: no move action.",
+      "badInjury": "Referenced critical injury not found: {uuid}",
+      "periodicStart": "\"{name}\": {actor} takes damage at the end of each of their turns. {stop}",
+      "pick": "Choose up to {count}:",
+      "pickSuspend": "Cyberware of {actor} that stops working",
+      "pickChip": "Chip ejected from {actor}",
+      "suspended": "Cyberware of {actor} stops working: {items}.",
+      "ejected": "\"{item}\" is ejected from {actor} to an adjacent square.",
+      "controlMove": "{source} controls the move action of {actor} on their next turn. The GM vetoes any obvious danger.",
+      "controlAll": "{source} controls the action and move action of {actor} on their next turn, using the stats and skills of {actor}."
     }
   }
 }
