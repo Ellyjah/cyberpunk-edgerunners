@@ -27,8 +27,9 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.5.2 (M3–M6, auditorías de Codex, estilo de hoja 2070 y veredicto de tiradas)
+## Estado actual: 0.5.3 (M3–M6, auditorías de Codex, estilo de hoja 2070 y veredicto de tiradas)
 
+- **0.5.3:** botón «Tirar daño» en la franja del veredicto, en lugar de la gota de RED (que queda oculta); lo ven el dueño del atacante y el DJ cuando hay impacto o el ataque no tiene objetivo. Sin cambios de reglas.
 - **0.5.2:** veredicto de tiradas (`scripts/verdict.js`, `styles/verdict.css`).
   - **Tiradas generales** (característica, habilidad y rol): desplegable «Dificultad (VD)» en la ventana de RED, con la tabla del Libro de reglas (9–29, *Asequible 13* por defecto) y «Sin VD (enfrentada)». Con Ctrl + clic no hay VD. El chat muestra éxito, fracaso, éxito crítico, «crítico… pero fracaso», pifia y «éxito pese a la pifia». Hay que superar la VD; el empate falla.
   - **Ataques con un objetivo marcado:**
