@@ -64,6 +64,8 @@
   border-radius: 2px;
 }
 .er2070-v-btn:hover:not(:disabled) { background: linear-gradient(100deg, #70b931 0%, #b6cf18 45%, #f4e300 100%); color: #000000; box-shadow: none; }
+.er2070-v-damage { border-color: #e0716b; }
+.er2070-v-damage i { margin-right: 0.25rem; }
 .er2070-v-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Estados. */

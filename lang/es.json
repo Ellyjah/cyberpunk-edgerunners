@@ -392,7 +392,8 @@
         "useDv": "Usar VD",
         "dodge": "Esquivar",
         "defend": "Defenderse (DES + Evasión)",
-        "gmDv": "Usar VD (DJ)"
+        "gmDv": "Usar VD (DJ)",
+        "rollDamage": "Tirar daño"
       },
       "tool": {
         "target": "Asignar o cambiar objetivo (el token que tengas marcado)",

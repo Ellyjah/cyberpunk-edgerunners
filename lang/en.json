@@ -392,7 +392,8 @@
         "useDv": "Use DV",
         "dodge": "Dodge",
         "defend": "Defend (DEX + Evasion)",
-        "gmDv": "Use DV (GM)"
+        "gmDv": "Use DV (GM)",
+        "rollDamage": "Roll damage"
       },
       "tool": {
         "target": "Assign or change target (your targeted token)",

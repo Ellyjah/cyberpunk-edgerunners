@@ -36,7 +36,7 @@ La fuente autorizada para las reglas está documentada en `../03-coordinacion/RE
     - a distancia, si el objetivo tiene REF 8 o más, su propietario (o el DJ) elige «Usar VD» o «Esquivar»; con REF menor se usa la VD sin preguntar;
     - en cuerpo a cuerpo, el propietario pulsa «Defenderse (DES + Evasión)» y el DJ también puede usar una VD;
     - la esquiva es la tirada normal de RED del defensor, y el atacante tiene que superarla;
-    - «Tirar daño» queda oculto hasta que hay impacto;
+    - la gota de daño de RED se sustituye por un botón «Tirar daño» en la franja, visible para el dueño del atacante y el DJ solo cuando hay impacto (o si el ataque no tiene objetivo);
     - en fuego automático se muestra el margen sobre la VD.
   - **Herramientas del DJ** (iconos mínimos en todas estas tarjetas): asignar o cambiar el objetivo a posteriori, y ajustar la tirada (modificador o total final, VD y defensa). Los cambios son visibles para todos. Si el veredicto cambia tras tirar el daño, la tarjeta lo avisa.
   - El estado se guarda en la bandera del mensaje. Las decisiones de los jugadores las escribe el DJ activo tras comprobar que el jugador es propietario del objetivo. RED no se modifica.

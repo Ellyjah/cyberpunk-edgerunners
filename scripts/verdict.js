@@ -266,6 +266,12 @@ function defenseButtons(d) {
   return `<div class="er2070-v-buttons">${buttons.join("")}</div>${wait}`;
 }
 
+/** «Tirar daño» en la franja: sustituye a la gota de RED (que queda oculta) y la pulsa por debajo. */
+function damageButton(d) {
+  if (!game.user.isGM && !userOwns(game.user, fromUuidSync(d.actorUuid))) return "";
+  return `<div class="er2070-v-buttons"><button type="button" class="er2070-v-btn er2070-v-damage" data-er2070-verdict="roll-damage"><i class="fas fa-droplet"></i> ${L("verdict.btn.rollDamage")}</button></div>`;
+}
+
 function bannerHtml(d) {
   const tools = game.user.isGM && d.kind !== "dodge"
     ? `<span class="er2070-v-tools">
@@ -287,7 +293,7 @@ function bannerHtml(d) {
   let body = "";
   if (ev.state === "pending") body = `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)}</div>${defenseButtons(d)}`;
   else if (ev.state === "unknown") body = `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)} · ${L("verdict.noDv")}</div>`;
-  else if (ev.state === "open") body = d.kind === "attack" && d.targetCount !== 1 ? "" : `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)}</div>`;
+  else if (ev.state === "open") body = d.kind === "attack" ? damageButton(d) : `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)}</div>`;
   else {
     const before = baseDv(d);
     const dvChanged = d.adj?.dvSet && before !== d.adj.dv;
@@ -299,7 +305,7 @@ function bannerHtml(d) {
     const margin = d.mode === "autofire" && ev.hit ? ` · ${L("verdict.margin", { value: ev.total - ev.against })}` : "";
     const label = L(`verdict.${d.kind === "attack" ? "attack" : "check"}.${ev.state}`);
     const warn = d.kind === "attack" && d.damageRolled && !ev.hit ? `<div class="er2070-v-warn">${L("verdict.damageWarning")}</div>` : "";
-    body = `<div class="er2070-v-result">${label}</div><div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)} · ${vs}${margin}</div>${warn}`;
+    body = `<div class="er2070-v-result">${label}</div><div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)} · ${vs}${margin}</div>${warn}${d.kind === "attack" && ev.hit ? damageButton(d) : ""}`;
   }
   return `<div class="er2070-verdict er2070-v-${ev.state}">${tools}${lines.map((l) => `<div class="er2070-v-line">${l}</div>`).join("")}${body}</div>`;
 }
@@ -328,8 +334,8 @@ function onRender(message, html) {
   if (d.kind !== "attack") return;
   const locked = damageLocked(d);
   root.querySelectorAll('[data-action="rollDamage"]').forEach((el) => {
-    if (locked) el.style.display = "none";
-    else if (!d.damageRolled) el.addEventListener("click", () => gmExec("verdict", { messageId: message.id, action: "damage" }));
+    el.style.display = "none";
+    if (!locked && !d.damageRolled) el.addEventListener("click", () => gmExec("verdict", { messageId: message.id, action: "damage" }));
   });
 }
 
@@ -342,6 +348,11 @@ async function act(message, action, event) {
   if (!d) return;
   switch (action) {
     case "use-dv": return gmExec("verdict", { messageId: message.id, action: "dv" });
+    case "roll-damage": {
+      if (damageLocked(d)) return;
+      const link = event.target.closest(".message")?.querySelector('[data-action="rollDamage"]');
+      return link?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey }));
+    }
     case "dodge": return rollDodge(message, d, event);
     case "gm-dv": return game.user.isGM && openAdjust(message, d, { defenseType: "dv" });
     case "adjust": return game.user.isGM && openAdjust(message, d);
