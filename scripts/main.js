@@ -3,6 +3,7 @@ import { registerEffectHooks, listenSocket, suspendAllCarriers, restoreSuspended
 import { registerNetHooks } from "./net.js";
 import { registerGearHooks } from "./gear.js";
 import { registerLifeHooks } from "./life.js";
+import { registerVerdictHooks } from "./verdict.js";
 
 const RED_ID = "cyberpunk-red-core";
 const TAB = "edgerunners-2070";
@@ -94,6 +95,7 @@ Hooks.once("setup", () => {
   registerNetHooks();
   registerGearHooks();
   registerLifeHooks();
+  registerVerdictHooks();
 });
 Hooks.once("ready", () => {
   if (game.system.id !== RED_ID) return;

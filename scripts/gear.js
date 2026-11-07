@@ -7,6 +7,7 @@ import { MODULE_ID, getCapabilities } from "./schema.js";
 import { shotPlan, effectiveStat, evaluateCondition, retryAllowed, beatsDv, unarmedDamage, ignoreArmorFromMultiplier, firingChamber, attackMode, stackSatisfied } from "./rules.js";
 import { L, esc, gmExec, registerHandler, registerRequest, requestOperations, userOwns, denied, resolveActor, actorCapabilities, chat, createCarrier, carriersOf, applyOperations } from "./effects.js";
 import { countInterfaceRoll } from "./net.js";
+import { tagRoll } from "./verdict.js";
 
 const RED_ID = "cyberpunk-red-core";
 const setting = (key) => game.settings.get(MODULE_ID, key);
@@ -192,6 +193,7 @@ function onCreateRoll(wrapped, type, actor, extraData = []) {
   const roll = wrapped(type, actor, extraData);
   if (!roll) return roll;
   try {
+    tagRoll(roll, actor, item);
     if (weapon && isAttack(roll)) return prepareAttack(item, actor, roll, caps, state);
     if (weapon && isDamage(roll)) applyDamageMods(item, actor, roll, caps, state);
     if (item.type === "skill" && actor) applyArmedStat(actor, roll, item.system.stat);
@@ -744,6 +746,7 @@ function onWoundStateMods(wrapped, ...args) {
 function onActorCreateRoll(wrapped, type, name, ...args) {
   const roll = wrapped(type, name, ...args);
   try {
+    if (roll) tagRoll(roll, this, null);
     if (type === "stat" && roll) applyArmedStat(this, roll, name);
   } catch (err) {
     console.error(`${MODULE_ID} |`, err);

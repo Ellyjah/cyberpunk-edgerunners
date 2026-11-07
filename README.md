@@ -27,8 +27,19 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.5.1 (M3–M6, correcciones de las auditorías de Codex y estilo de hoja 2070)
+## Estado actual: 0.5.2 (M3–M6, auditorías de Codex, estilo de hoja 2070 y veredicto de tiradas)
 
+- **0.5.2:** veredicto de tiradas (`scripts/verdict.js`, `styles/verdict.css`).
+  - **Tiradas generales** (característica, habilidad y rol): desplegable «Dificultad (VD)» en la ventana de RED, con la tabla del Libro de reglas (9–29, *Asequible 13* por defecto) y «Sin VD (enfrentada)». Con Ctrl + clic no hay VD. El chat muestra éxito, fracaso, éxito crítico, «crítico… pero fracaso», pifia y «éxito pese a la pifia». Hay que superar la VD; el empate falla.
+  - **Ataques con un objetivo marcado:**
+    - la VD se calcula por distancia con la tabla de VD del arma de RED, y la ventana muestra objetivo, distancia y VD;
+    - a distancia, si el objetivo tiene REF 8 o más, su propietario (o el DJ) elige «Usar VD» o «Esquivar»; con REF menor se usa la VD sin preguntar;
+    - en cuerpo a cuerpo, el propietario pulsa «Defenderse (DES + Evasión)» y el DJ también puede usar una VD;
+    - la esquiva es la tirada normal de RED del defensor, y el atacante tiene que superarla;
+    - «Tirar daño» queda oculto hasta que hay impacto;
+    - en fuego automático se muestra el margen sobre la VD.
+  - **Herramientas del DJ** (iconos mínimos en todas estas tarjetas): asignar o cambiar el objetivo a posteriori, y ajustar la tirada (modificador o total final, VD y defensa). Los cambios son visibles para todos. Si el veredicto cambia tras tirar el daño, la tarjeta lo avisa.
+  - El estado se guarda en la bandera del mensaje. Las decisiones de los jugadores las escribe el DJ activo tras comprobar que el jugador es propietario del objetivo. RED no se modifica.
 - **0.5.1:** correcciones de la segunda auditoría de Codex (A050-01–A050-04): el DJ solo despacha solicitudes y manejadores registrados con clave propia (un nombre heredado como `constructor` se rechaza); un efecto temporal desactivado con su casilla nativa deja de actuar (retira sus estados, guarda sus Items temporales, levanta sus suspensiones de implantes y no hace daño periódico ni operaciones al caducar) y al reactivarlo vuelve a actuar; al desactivar el módulo desde su gestor, los efectos se suspenden antes de guardar y de ofrecer la recarga; rótulos del PNJ legibles con el tema. El ajuste del tema pasa a ser el desplegable **Estilo de hoja**: *Mantener hoja original*, *Hoja 2070* (sigue el modo claro u oscuro de RED, con paleta 2070 oscura propia) y *Hoja 2070 clara* (fondo claro aunque RED esté en modo oscuro). El valor de la casilla de 0.5.0 se conserva (activada → *Hoja 2070 clara*).
 - **0.5.0:** correcciones de la auditoría independiente de Codex (R01–R05): el DJ solo acepta solicitudes tipadas y comprueba quién las envía (identidad que añade el servidor de Foundry) y las operaciones salen del propio Item; los estados y recursos de un efecto se limpian una sola vez en cualquier retirada (caducidad, borrado manual o borrado del Item origen) sin quitar estados ajenos o sostenidos por otro efecto; las mutaciones de PD, Humanidad y turno se hacen en serie; al desactivar el módulo sus efectos se suspenden y al reactivarlo se restauran. **Tema 2070** opcional (ajuste del DJ para todos): paleta amarillo y verde de las hojas del Mission Kit y fuentes libres Rajdhani y Saira Condensed (OFL), sin cambiar la distribución de las hojas de RED.
 - **0.4.1:** todas las tiradas contra VD del módulo (cortafuegos, brechas, hackeos, segundo intento, efecto secundario) siguen la regla de RED: hay que superar la VD; el empate falla.

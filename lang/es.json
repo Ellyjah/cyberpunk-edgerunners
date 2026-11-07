@@ -348,6 +348,103 @@
       "suspending": "Suspendiendo los efectos temporales del módulo antes de desactivarlo…",
       "suspendedAll": "Edgerunners 2070: {count} efecto(s) del módulo suspendido(s) al desactivarlo.",
       "restoredAll": "Edgerunners 2070: {count} efecto(s) del módulo restaurado(s)."
+    },
+    "verdict": {
+      "check": {
+        "success": "Éxito",
+        "failure": "Fracaso",
+        "critSuccess": "¡Éxito crítico!",
+        "critFailure": "Crítico… pero fracaso",
+        "fumble": "¡Pifia!",
+        "fumbleSuccess": "Éxito pese a la pifia"
+      },
+      "attack": {
+        "success": "Impacto",
+        "failure": "Fallo",
+        "critSuccess": "¡Impacto crítico!",
+        "critFailure": "Crítico… pero fallo",
+        "fumble": "¡Pifia!",
+        "fumbleSuccess": "Impacto pese a la pifia"
+      },
+      "dv": {
+        "none": "Sin VD (enfrentada)",
+        "simple": "Sencillo",
+        "everyday": "Asequible",
+        "difficult": "Difícil",
+        "professional": "Profesional",
+        "heroic": "Heroico",
+        "incredible": "Increíble",
+        "legendary": "Legendario"
+      },
+      "dialog": {
+        "dv": "Dificultad (VD)",
+        "dodge": "Esquiva o defensa contra un ataque: el resultado se compara con la tirada del atacante.",
+        "noTarget": "Sin objetivo marcado: el DJ podrá asignarlo en el chat.",
+        "manyTargets": "Varios objetivos marcados: sin VD automática."
+      },
+      "range": {
+        "noAttacker": "sin distancia (el atacante no tiene token en esta escena)",
+        "units": "la escena no mide en metros: VD manual",
+        "noTable": "el arma no tiene tabla de VD",
+        "outOfRange": "fuera de alcance"
+      },
+      "btn": {
+        "useDv": "Usar VD",
+        "dodge": "Esquivar",
+        "defend": "Defenderse (DES + Evasión)",
+        "gmDv": "Usar VD (DJ)"
+      },
+      "tool": {
+        "target": "Asignar o cambiar objetivo (el token que tengas marcado)",
+        "adjust": "Ajustar tirada"
+      },
+      "adjust": {
+        "title": "Ajustar tirada: {title}",
+        "hint": "Dado natural: {nat} · total original: {total}.",
+        "mod": "Modificador",
+        "total": "Total final",
+        "computed": "calculado",
+        "auto": "Sin cambios (VD {value})",
+        "custom": "Otra…",
+        "defense": "Defensa",
+        "defPending": "Pendiente",
+        "defDv": "Contra la VD",
+        "defDodge": "Contra esquiva o defensa (total)",
+        "needDodge": "Indica el total de la esquiva o defensa.",
+        "save": "Aplicar",
+        "cancel": "Cancelar"
+      },
+      "target": "Objetivo",
+      "melee": "cuerpo a cuerpo",
+      "noTarget": "Sin objetivo marcado: lo resuelve el DJ.",
+      "manyTargets": "Varios objetivos: lo resuelve el DJ.",
+      "total": "Total",
+      "dvShort": "VD",
+      "noDv": "falta la VD: el DJ debe ajustarla",
+      "vsDodge": "contra esquiva {value} ({name})",
+      "before": "antes {value}",
+      "margin": "margen +{value}",
+      "waiting": "Defensa pendiente: decide {name}.",
+      "damageWarning": "Veredicto cambiado después de tirar el daño: revisa el daño aplicado.",
+      "dodgeCard": "Esquiva o defensa: el resultado se aplica en la tarjeta del ataque.",
+      "assignOne": "Marca exactamente un token como objetivo y vuelve a pulsar.",
+      "noEvasion": "{name} no tiene la habilidad Evasión.",
+      "table": {
+        "ThrownWeapon": "Arma arrojadiza",
+        "AssaultRifle": "Fusil de asalto",
+        "BowsCrossbows": "Arcos y ballestas",
+        "RocketLauncher": "Lanzacohetes",
+        "SMGAutofire": "Subfusil, fuego automático",
+        "Pistol": "Pistola",
+        "LongBarrelPistol": "Pistola de cañón largo",
+        "SniperRifle": "Fusil de francotirador",
+        "Generic": "Genérica",
+        "AssaultRifleAutofire": "Fusil de asalto, fuego automático",
+        "ShotgunSlug": "Escopeta (posta)",
+        "GrenadeLauncher": "Lanzagranadas",
+        "SMG": "Subfusil"
+      },
+      "vsDefense": "contra defensa {value} ({name})"
     }
   }
 }

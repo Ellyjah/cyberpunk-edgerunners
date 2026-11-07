@@ -348,6 +348,88 @@
       "suspending": "Suspending the module's temporary effects before disabling it…",
       "suspendedAll": "Edgerunners 2070: {count} module effect(s) suspended on deactivation.",
       "restoredAll": "Edgerunners 2070: {count} module effect(s) restored."
+    },
+    "verdict": {
+      "check": {
+        "success": "Success",
+        "failure": "Failure",
+        "critSuccess": "Critical success!",
+        "critFailure": "Critical… but failure",
+        "fumble": "Fumble!",
+        "fumbleSuccess": "Success despite the fumble"
+      },
+      "attack": {
+        "success": "Hit",
+        "failure": "Miss",
+        "critSuccess": "Critical hit!",
+        "critFailure": "Critical… but miss",
+        "fumble": "Fumble!",
+        "fumbleSuccess": "Hit despite the fumble"
+      },
+      "dv": {
+        "none": "No DV (opposed)",
+        "simple": "Simple",
+        "everyday": "Everyday",
+        "difficult": "Difficult",
+        "professional": "Professional",
+        "heroic": "Heroic",
+        "incredible": "Incredible",
+        "legendary": "Legendary"
+      },
+      "dialog": {
+        "dv": "Difficulty (DV)",
+        "dodge": "Dodge or defense against an attack: the result is compared with the attacker's roll.",
+        "noTarget": "No target marked: the GM can assign it in chat.",
+        "manyTargets": "Several targets marked: no automatic DV."
+      },
+      "range": {
+        "noAttacker": "no distance (the attacker has no token in this scene)",
+        "units": "the scene is not measured in meters: manual DV",
+        "noTable": "the weapon has no DV table",
+        "outOfRange": "out of range"
+      },
+      "btn": {
+        "useDv": "Use DV",
+        "dodge": "Dodge",
+        "defend": "Defend (DEX + Evasion)",
+        "gmDv": "Use DV (GM)"
+      },
+      "tool": {
+        "target": "Assign or change target (your targeted token)",
+        "adjust": "Adjust roll"
+      },
+      "adjust": {
+        "title": "Adjust roll: {title}",
+        "hint": "Natural die: {nat} · original total: {total}.",
+        "mod": "Modifier",
+        "total": "Final total",
+        "computed": "computed",
+        "auto": "Unchanged (DV {value})",
+        "custom": "Other…",
+        "defense": "Defense",
+        "defPending": "Pending",
+        "defDv": "Against the DV",
+        "defDodge": "Against dodge or defense (total)",
+        "needDodge": "Enter the dodge or defense total.",
+        "save": "Apply",
+        "cancel": "Cancel"
+      },
+      "target": "Target",
+      "melee": "melee",
+      "noTarget": "No target marked: the GM resolves it.",
+      "manyTargets": "Several targets: the GM resolves it.",
+      "total": "Total",
+      "dvShort": "DV",
+      "noDv": "DV missing: the GM must adjust it",
+      "vsDodge": "against dodge {value} ({name})",
+      "before": "was {value}",
+      "margin": "margin +{value}",
+      "waiting": "Defense pending: {name} decides.",
+      "damageWarning": "Verdict changed after rolling damage: check the damage applied.",
+      "dodgeCard": "Dodge or defense: the result is applied on the attack card.",
+      "assignOne": "Target exactly one token and click again.",
+      "noEvasion": "{name} has no Evasion skill.",
+      "vsDefense": "against defense {value} ({name})"
     }
   }
 }
