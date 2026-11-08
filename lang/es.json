@@ -95,6 +95,10 @@
         "original": "Mantener hoja original",
         "er2070": "Hoja 2070",
         "er2070-light": "Hoja 2070 clara"
+      },
+      "rollSafeMode": {
+        "name": "Modo seguro de tiradas (solo sistema base)",
+        "hint": "Interruptor de emergencia. Con la casilla marcada, Edgerunners 2070 deja de modificar las tiradas y se usan las de Cyberpunk RED tal cual: sin VD elegida en el diálogo, sin banner de veredicto ni botones de defensa, sin modificadores 2070 (armas, munición especial, características efectivas, estados de herida) y sin efectos automáticos tras atacar o dañar. La gota de daño de RED vuelve a verse. El resto del módulo sigue funcionando. Se aplica al momento; los mensajes ya publicados no cambian."
       }
     },
     "net": {
@@ -446,6 +450,11 @@
         "SMG": "Subfusil"
       },
       "vsDefense": "contra defensa {value} ({name})"
+    },
+    "safeMode": {
+      "on": "Modo seguro de tiradas activado: las tiradas vuelven a ser las de Cyberpunk RED.",
+      "off": "Modo seguro de tiradas desactivado: Edgerunners 2070 vuelve a automatizar las tiradas.",
+      "active": "Edgerunners 2070: el modo seguro de tiradas está activo. Las tiradas son las del sistema base."
     }
   }
 }

@@ -6,7 +6,7 @@
  * - Herramientas del DJ en todas estas tarjetas: asignar objetivo y ajustar la tirada.
  * El estado vive en la bandera del mensaje de chat; RED no se modifica.
  */
-import { MODULE_ID } from "./schema.js";
+import { MODULE_ID, rollSafeMode } from "./schema.js";
 import { beatsDv } from "./rules.js";
 import { L, esc, gmExec, registerHandler, userOwns, denied } from "./effects.js";
 
@@ -492,7 +492,8 @@ function openAdjust(message, d, { defenseType } = {}) {
 // ---------------------------------------------------------------- registro
 
 export function registerVerdictHooks() {
-  Hooks.on("renderCPRRollDialog", onRenderDialog);
-  Hooks.on("preCreateChatMessage", onPreCreate);
-  Hooks.on("renderChatMessage", onRender);
+  // Modo seguro: sin desplegable de VD ni banner; la gota de daño de RED vuelve a verse.
+  Hooks.on("renderCPRRollDialog", (...a) => (rollSafeMode() ? undefined : onRenderDialog(...a)));
+  Hooks.on("preCreateChatMessage", (...a) => (rollSafeMode() ? undefined : onPreCreate(...a)));
+  Hooks.on("renderChatMessage", (...a) => (rollSafeMode() ? undefined : onRender(...a)));
 }

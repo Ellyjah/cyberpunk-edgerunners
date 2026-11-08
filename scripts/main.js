@@ -1,4 +1,4 @@
-import { MODULE_ID, SCHEMA_VERSION, CAPABILITIES, validate, migrate, getCapabilities } from "./schema.js";
+import { MODULE_ID, SCHEMA_VERSION, CAPABILITIES, validate, migrate, getCapabilities, rollSafeMode } from "./schema.js";
 import { registerEffectHooks, listenSocket, suspendAllCarriers, restoreSuspendedCarriers } from "./effects.js";
 import { registerNetHooks } from "./net.js";
 import { registerGearHooks } from "./gear.js";
@@ -44,6 +44,17 @@ const SETTINGS = {
 
 Hooks.once("init", () => {
   if (game.system.id !== RED_ID) return;
+  // Interruptor de emergencia: el primero de la lista para encontrarlo rápido. Se aplica al momento, sin recargar.
+  game.settings.register(MODULE_ID, "rollSafeMode", {
+    name: "EDGERUNNERS2070.settings.rollSafeMode.name",
+    hint: "EDGERUNNERS2070.settings.rollSafeMode.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    requiresReload: false,
+    onChange: (on) => ui.notifications[on ? "warn" : "info"](L(on ? "safeMode.on" : "safeMode.off")),
+  });
   for (const [key, def] of Object.entries(SETTINGS)) {
     game.settings.register(MODULE_ID, key, {
       name: `EDGERUNNERS2070.settings.${key}.name`,
@@ -100,6 +111,7 @@ Hooks.once("setup", () => {
 Hooks.once("ready", () => {
   if (game.system.id !== RED_ID) return;
   listenSocket();
+  if (game.user.isGM && rollSafeMode()) ui.notifications.warn(L("safeMode.active"), { permanent: true });
   // Efectos suspendidos al desactivar el módulo: se restauran al volver a activarlo (R05).
   if (game.user === game.users.activeGM) {
     restoreSuspendedCarriers();

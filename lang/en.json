@@ -95,6 +95,10 @@
         "original": "Keep original sheet",
         "er2070": "2070 sheet",
         "er2070-light": "Light 2070 sheet"
+      },
+      "rollSafeMode": {
+        "name": "Safe roll mode (base system only)",
+        "hint": "Emergency switch. When checked, Edgerunners 2070 stops modifying rolls and Cyberpunk RED rolls are used as they are: no DV chosen in the dialog, no verdict banner or defence buttons, no 2070 modifiers (weapons, special ammunition, effective stats, wound states) and no automatic effects after attacks or damage. RED's damage droplet is shown again. The rest of the module keeps working. Applies immediately; messages already posted do not change."
       }
     },
     "net": {
@@ -431,6 +435,11 @@
       "assignOne": "Target exactly one token and click again.",
       "noEvasion": "{name} has no Evasion skill.",
       "vsDefense": "against defense {value} ({name})"
+    },
+    "safeMode": {
+      "on": "Safe roll mode on: rolls are back to Cyberpunk RED.",
+      "off": "Safe roll mode off: Edgerunners 2070 automates rolls again.",
+      "active": "Edgerunners 2070: safe roll mode is active. Rolls are the base system ones."
     }
   }
 }

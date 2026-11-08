@@ -5,6 +5,14 @@
  */
 
 export const MODULE_ID = "edgerunners-2070";
+
+/**
+ * Modo seguro de tiradas (0.5.4): con el ajuste activo, el módulo deja las tiradas exactamente como las hace
+ * RED (sin modificadores, veredicto, munición especial ni efectos tras atacar o dañar). Lo demás sigue igual.
+ */
+export function rollSafeMode() {
+  try { return game.settings.get(MODULE_ID, "rollSafeMode") === true; } catch { return false; }
+}
 export const SCHEMA_VERSION = 1;
 
 // Notación de parámetros: tipo + "!" si es obligatorio.

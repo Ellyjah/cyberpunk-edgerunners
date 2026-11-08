@@ -3,7 +3,7 @@
  * Se engancha a RED con libWrapper: creación y confirmación de tiradas de Item, instalación de
  * ciberequipo, Humanidad máxima, penalización por estado de heridas y tiradas de característica.
  */
-import { MODULE_ID, getCapabilities } from "./schema.js";
+import { MODULE_ID, getCapabilities, rollSafeMode } from "./schema.js";
 import { shotPlan, effectiveStat, evaluateCondition, retryAllowed, beatsDv, unarmedDamage, ignoreArmorFromMultiplier, firingChamber, attackMode, stackSatisfied } from "./rules.js";
 import { L, esc, gmExec, registerHandler, registerRequest, requestOperations, userOwns, denied, resolveActor, actorCapabilities, chat, createCarrier, carriersOf, applyOperations } from "./effects.js";
 import { countInterfaceRoll } from "./net.js";
@@ -177,6 +177,7 @@ function applyArmedStat(actor, roll, stat) {
 }
 
 function onCreateRoll(wrapped, type, actor, extraData = []) {
+  if (rollSafeMode()) return wrapped(type, actor, extraData);
   const item = this;
   const weapon = actor && WEAPON_HOSTS.has(item.type) && item.actor;
   let caps = [];
@@ -286,6 +287,7 @@ async function afterDamage(item, actor, roll) {
 }
 
 async function onConfirmRoll(wrapped, cprRoll, ...args) {
+  if (rollSafeMode()) return wrapped(cprRoll, ...args);
   const item = this;
   const actor = item.actor;
   const weapon = actor && WEAPON_HOSTS.has(item.type);
@@ -736,6 +738,7 @@ function onCalcMaxHumanity(wrapped, ...args) {
 
 function onWoundStateMods(wrapped, ...args) {
   const mod = wrapped(...args);
+  if (rollSafeMode()) return mod;
   if (!mod) return mod;
   const state = this.getWoundState();
   const fromEffects = carriersOf(this).some((e) => !e.disabled && timed(e).ignoreWound?.states?.includes(state));
@@ -745,6 +748,7 @@ function onWoundStateMods(wrapped, ...args) {
 
 function onActorCreateRoll(wrapped, type, name, ...args) {
   const roll = wrapped(type, name, ...args);
+  if (rollSafeMode()) return roll;
   try {
     if (roll) tagRoll(roll, this, null);
     if (type === "stat" && roll) applyArmedStat(this, roll, name);
