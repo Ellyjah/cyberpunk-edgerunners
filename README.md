@@ -2,8 +2,6 @@
 
 Motor de reglas para **Foundry VTT 12** y el sistema **Cyberpunk RED – Core**, pensado para partidas ambientadas en los años 2070. Añade automatizaciones y herramientas de mesa sobre las fichas y tiradas de RED, sin modificar el sistema. No contiene objetos, actores, mapas ni textos comerciales: el contenido lo aportan otros módulos o el propio DJ mediante «capacidades» guardadas en los objetos.
 
-*Contenido no oficial, no aprobado ni respaldado por R. Talsorian Games.*
-
 ## Qué hace
 
 **Veredicto de tiradas**
