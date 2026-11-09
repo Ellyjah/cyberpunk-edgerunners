@@ -17,6 +17,10 @@ const openTab = new WeakSet();
 // el DJ puede cambiarlos. Se usarán a partir de M4.
 const SETTINGS = {
   neuroportRequired: { type: Boolean, default: true },
+  // 0.5.5: cobertura en la ventana de ataque a distancia (regla de la casa del director; RED no tiene cobertura parcial).
+  coverModifiers: { type: Boolean, default: true },
+  coverLight: { type: Number, default: -1 },
+  coverPartial: { type: Number, default: -2 },
   actionCounter: { type: String, default: "auto", choices: ["auto", "reminder"] },
   selfIceDv: { type: String, default: "6,8,10" },
   controlNodeDv: { type: Number, default: 10 },

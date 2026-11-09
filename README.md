@@ -27,7 +27,13 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.5.4 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto y modo seguro de tiradas)
+## Estado actual: 0.5.5 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas y modificadores 2070 en la ventana de ataque)
+
+- **0.5.5:** bloque **Modificadores 2070** en la ventana de ataque de RED (no aparece en el modo seguro):
+  - **Cobertura** (regla de la casa, en ataques a distancia): ninguna, ligera (−1) o parcial (−2). Los valores se cambian en la configuración y el bloque se puede desactivar. RED no tiene cobertura parcial.
+  - **Rebote** (armas con la conversión de potencia del Mission Kit): −4 al ataque, sin penalización en un tiro de precisión. La tarjeta avisa de que el DJ valida la trayectoria.
+  - **Disparo cargado** (armas tecnológicas): casilla que carga el arma en ese ataque. Gasta la acción de movimiento, pasa a CdT 1 y gasta la munición del disparo cargado. La tirada de daño ignora la mitad de la CP (`ignoreArmorPercent` 50).
+  - **Segundo intento de la munición inteligente mejorada:** ya no sale tras cualquier disparo. Es un botón en la franja del veredicto que solo aparece si el ataque **falla por 5 o menos** (el empate cuenta como fallo por 0); si acierta o falla por 6 o más, no hay botón. Se tira 14 + 1d10 + SUE y se conservan las penalizaciones del primer disparo. El DJ valida y escribe el resultado; si el segundo intento acierta, la franja da paso al daño. Sin VD conocida, la ventana del intento pide la VD.
 
 - **0.5.4:** ajuste de mundo **Modo seguro de tiradas (solo sistema base)**, el primero de la configuración del módulo. Es un interruptor de emergencia del DJ: con la casilla marcada, las tiradas son exactamente las de RED. No hay desplegable de VD, veredicto, botones del veredicto, modificadores 2070 (armas, munición especial, características efectivas, estados de herida) ni efectos automáticos tras atacar o dañar, y la gota de daño de RED vuelve a verse. Se aplica al momento, sin recargar. Mientras está activo, el DJ ve un aviso permanente al entrar. No afecta a lo que no es una tirada (efectos temporales, drogas, consolas, ciberequipo, Humanidad), y los mensajes ya publicados no cambian.
 - **0.5.3:** botón «Tirar daño» en la franja del veredicto, en lugar de la gota de RED (que queda oculta); lo ven el dueño del atacante y el DJ cuando hay impacto o el ataque no tiene objetivo. Sin cambios de reglas.

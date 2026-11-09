@@ -7,7 +7,7 @@
  * El estado vive en la bandera del mensaje de chat; RED no se modifica.
  */
 import { MODULE_ID, rollSafeMode } from "./schema.js";
-import { beatsDv } from "./rules.js";
+import { beatsDv, retryAllowed } from "./rules.js";
 import { L, esc, gmExec, registerHandler, userOwns, denied } from "./effects.js";
 
 const RED_ID = "cyberpunk-red-core";
@@ -106,6 +106,21 @@ export function tagRoll(roll, actor, item) {
   };
 }
 
+/**
+ * 0.5.5: segundo intento de la munición inteligente mejorada (Mission Kit). Lo marca gear.js al preparar el ataque;
+ * la franja lo ofrece solo si el ataque falla por el margen o menos (contra la VD o la esquiva).
+ */
+export function markRetry(roll, cfg) {
+  if (roll?.er2070Verdict?.kind === "attack") roll.er2070Verdict.retry = cfg;
+}
+
+/** Suma de las penalizaciones (modificadores negativos) de la tirada: se conservan en el segundo intento. */
+function penaltiesOf(roll) {
+  const mods = (roll.mods ?? []).map((m) => Number(m.value) || 0);
+  const extra = (roll.additionalMods ?? []).map((v) => Number.parseInt(v, 10) || 0);
+  return [...mods, ...extra].filter((v) => v < 0).reduce((a, b) => a + b, 0);
+}
+
 function critOf(roll) {
   if (roll.calculateCritical === false) return null;
   if (roll.wasCritSuccess?.()) return "success";
@@ -121,6 +136,7 @@ async function build(roll, actor, item) {
   };
   if (v.kind === "check") d.dv = num(v.dv);
   if (v.kind === "attack") {
+    if (v.retry) d.retry = { base: v.retry.base, maxMargin: v.retry.maxMargin, ignoreVisibility: v.retry.ignoreVisibility, penalties: penaltiesOf(roll), used: false, result: null };
     d.mode = ATTACKS[roll.constructor.name];
     d.ranged = Boolean(item?.system?.isRanged);
     d.dvTable = item?.system?.dvTable || null;
@@ -219,6 +235,11 @@ export function evaluate(d) {
     else return { state: "open", total };
   } else return { state: "open", total };
   if (against === null) return { state: "unknown", total };
+  if (d.retry?.result) {
+    const t = d.retry.result.total;
+    const ok = beatsDv(t, against);
+    return { state: ok ? "success" : "failure", total: t, against, vs, hit: ok, retried: true, first: total };
+  }
   const hit = beatsDv(total, against);
   const state = d.crit === "success" ? (hit ? "critSuccess" : "critFailure") : d.crit === "fail" ? (hit ? "fumbleSuccess" : "fumble") : hit ? "success" : "failure";
   return { state, total, against, vs, hit };
@@ -272,6 +293,26 @@ function damageButton(d) {
   return `<div class="er2070-v-buttons"><button type="button" class="er2070-v-btn er2070-v-damage" data-er2070-verdict="roll-damage"><i class="fas fa-droplet"></i> ${L("verdict.btn.rollDamage")}</button></div>`;
 }
 
+/** ¿Se puede ofrecer el segundo intento? Falla por el margen o menos; sin VD conocida, se pedirá a mano. */
+function retryOffer(d, ev) {
+  if (d.kind !== "attack" || !d.retry || d.retry.used) return false;
+  if (!game.user.isGM && !userOwns(game.user, fromUuidSync(d.actorUuid))) return false;
+  if (ev.state === "open" || ev.state === "unknown") return true;
+  if (ev.hit || ev.against === undefined || ev.against === null) return false;
+  return retryAllowed(ev.total, ev.against, d.retry.maxMargin);
+}
+
+function retryHtml(d, ev) {
+  const parts = [];
+  if (d.retry?.result) {
+    const r = d.retry.result;
+    parts.push(`<div class="er2070-v-detail">${L("verdict.retry.done", { first: ev.first ?? d.total, total: r.total, base: d.retry.base, die: r.die, luck: r.luck, penalties: d.retry.penalties })}</div>`);
+  } else if (retryOffer(d, ev)) {
+    parts.push(`<div class="er2070-v-buttons"><button type="button" class="er2070-v-btn" data-er2070-verdict="retry"><i class="fas fa-crosshairs"></i> ${L("verdict.retry.btn", { base: d.retry.base, margin: d.retry.maxMargin })}</button></div>`);
+  }
+  return parts.join("");
+}
+
 function bannerHtml(d) {
   const tools = game.user.isGM && d.kind !== "dodge"
     ? `<span class="er2070-v-tools">
@@ -292,8 +333,8 @@ function bannerHtml(d) {
 
   let body = "";
   if (ev.state === "pending") body = `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)}</div>${defenseButtons(d)}`;
-  else if (ev.state === "unknown") body = `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)} · ${L("verdict.noDv")}</div>`;
-  else if (ev.state === "open") body = d.kind === "attack" ? damageButton(d) : `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)}</div>`;
+  else if (ev.state === "unknown") body = `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)} · ${L("verdict.noDv")}</div>${retryHtml(d, ev)}`;
+  else if (ev.state === "open") body = d.kind === "attack" ? `${retryHtml(d, ev)}${damageButton(d)}` : `<div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)}</div>`;
   else {
     const before = baseDv(d);
     const dvChanged = d.adj?.dvSet && before !== d.adj.dv;
@@ -305,7 +346,8 @@ function bannerHtml(d) {
     const margin = d.mode === "autofire" && ev.hit ? ` · ${L("verdict.margin", { value: ev.total - ev.against })}` : "";
     const label = L(`verdict.${d.kind === "attack" ? "attack" : "check"}.${ev.state}`);
     const warn = d.kind === "attack" && d.damageRolled && !ev.hit ? `<div class="er2070-v-warn">${L("verdict.damageWarning")}</div>` : "";
-    body = `<div class="er2070-v-result">${label}</div><div class="er2070-v-detail">${L("verdict.total")} ${totalText(d)} · ${vs}${margin}</div>${warn}${d.kind === "attack" && ev.hit ? damageButton(d) : ""}`;
+    const shown = ev.retried ? `${ev.total} (${L("verdict.retry.label")})` : totalText(d);
+    body = `<div class="er2070-v-result">${label}</div><div class="er2070-v-detail">${L("verdict.total")} ${shown} · ${vs}${margin}</div>${retryHtml(d, ev)}${warn}${d.kind === "attack" && ev.hit ? damageButton(d) : ""}`;
   }
   return `<div class="er2070-verdict er2070-v-${ev.state}">${tools}${lines.map((l) => `<div class="er2070-v-line">${l}</div>`).join("")}${body}</div>`;
 }
@@ -357,7 +399,50 @@ async function act(message, action, event) {
     case "gm-dv": return game.user.isGM && openAdjust(message, d, { defenseType: "dv" });
     case "adjust": return game.user.isGM && openAdjust(message, d);
     case "target": return game.user.isGM && assignTarget(message, d);
+    case "retry": return rollRetry(message, d);
   }
+}
+
+/** 1d10 con las reglas de RED (10 explota hacia arriba, 1 hacia abajo). */
+async function d10Red() {
+  const first = await new Roll("1d10").evaluate();
+  const rolls = [first];
+  let total = first.total;
+  if (first.total === 10 || first.total === 1) {
+    const second = await new Roll("1d10").evaluate();
+    rolls.push(second);
+    total += first.total === 10 ? second.total : -second.total;
+  }
+  return { total, rolls };
+}
+
+/** Segundo intento: base (14) + 1d10 + SUE + penalizaciones del primer disparo, contra la misma VD o esquiva. */
+async function rollRetry(message, d) {
+  const ev = evaluate(d);
+  if (!retryOffer(d, ev)) return;
+  const actor = fromUuidSync(d.actorUuid);
+  if (!actor || (!game.user.isGM && !userOwns(game.user, actor))) return;
+  const needDv = ev.state === "open" || ev.state === "unknown";
+  const luckMax = actor.system.stats?.luck?.value ?? 0;
+  const form = await Dialog.prompt({
+    title: L("verdict.retry.title"),
+    content: `<p>${L("verdict.retry.hint", { first: d.total, base: d.retry.base, penalties: d.retry.penalties, margin: d.retry.maxMargin })}</p>
+      ${needDv ? `<div class="form-group"><label>${L("verdict.dialog.dv")}</label><input type="number" name="dv" value="15"></div>` : ""}
+      <div class="form-group"><label>${L("verdict.retry.luck", { max: luckMax })}</label><input type="number" name="luck" value="0" min="0" max="${luckMax}"></div>`,
+    label: L("verdict.retry.roll"),
+    callback: (html) => {
+      const root = html[0] ?? html;
+      return { dv: needDv ? num(root.querySelector("[name=dv]").value) : null, luck: Math.max(0, Math.min(luckMax, num(root.querySelector("[name=luck]").value) ?? 0)) };
+    },
+    rejectClose: false,
+  });
+  if (!form) return;
+  if (needDv && (form.dv === null || !retryAllowed(d.total, form.dv, d.retry.maxMargin))) return ui.notifications.warn(L("verdict.retry.notAllowed", { margin: d.retry.maxMargin }));
+  const die = await d10Red();
+  const total = d.retry.base + die.total + form.luck + d.retry.penalties;
+  if (form.luck) await actor.update({ "system.stats.luck.value": luckMax - form.luck });
+  await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: `<div class="er2070-chat"><p>${L("verdict.retry.card", { total, base: d.retry.base, die: die.total, luck: form.luck, penalties: d.retry.penalties })}</p></div>`, rolls: die.rolls });
+  return gmExec("verdict", { messageId: message.id, action: "retry", total, die: die.total, luck: form.luck, dv: form.dv });
 }
 
 /** DJ: el objetivo es el token que tiene marcado ahora. */
@@ -416,6 +501,21 @@ registerHandler("verdict", async (data, userId) => {
     if (!user.isGM && message.author?.id !== userId) return denied(user, "verdict", "damage");
     if (d.damageRolled) return;
     d.damageRolled = true;
+    return write(message, d);
+  }
+  if (data.action === "retry") {
+    const attacker = fromUuidSync(d.actorUuid);
+    if (!d.retry || d.retry.used || !userOwns(user, attacker)) return denied(user, "verdict", "retry");
+    const total = num(data.total), die = num(data.die), luck = num(data.luck) ?? 0;
+    if (total === null || die === null || die < -9 || die > 20 || luck < 0 || total !== d.retry.base + die + luck + d.retry.penalties) return denied(user, "verdict", "retry");
+    const ev = evaluate(d);
+    if (ev.state === "open" || ev.state === "unknown") {
+      const dv = num(data.dv);
+      if (dv === null || !retryAllowed(d.total, dv, d.retry.maxMargin)) return denied(user, "verdict", "retry");
+      d.adj = { ...blankAdj(), ...(d.adj ?? {}), dvSet: true, dv };
+      if (d.target && !d.defense) d.defense = defense("dv", { by: user.name });
+    } else if (ev.hit || !retryAllowed(ev.total, ev.against, d.retry.maxMargin)) return denied(user, "verdict", "retry");
+    d.retry = { ...d.retry, used: true, result: { total, die, luck, by: user.name } };
     return write(message, d);
   }
   const token = d.target?.uuid ? fromUuidSync(d.target.uuid) : null;

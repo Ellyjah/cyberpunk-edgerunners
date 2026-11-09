@@ -7,7 +7,7 @@ import { MODULE_ID, getCapabilities, rollSafeMode } from "./schema.js";
 import { shotPlan, effectiveStat, evaluateCondition, retryAllowed, beatsDv, unarmedDamage, ignoreArmorFromMultiplier, firingChamber, attackMode, stackSatisfied } from "./rules.js";
 import { L, esc, gmExec, registerHandler, registerRequest, requestOperations, userOwns, denied, resolveActor, actorCapabilities, chat, createCarrier, carriersOf, applyOperations } from "./effects.js";
 import { countInterfaceRoll } from "./net.js";
-import { tagRoll } from "./verdict.js";
+import { tagRoll, markRetry } from "./verdict.js";
 
 const RED_ID = "cyberpunk-red-core";
 const setting = (key) => game.settings.get(MODULE_ID, key);
@@ -104,6 +104,23 @@ function afterRoll(roll, actor, fn) {
 
 // ---------------------------------------------------------------- preparación de tiradas (createRoll)
 
+/** Munición inteligente mejorada cargada (la de la recámara que dispara, o la instalada en el arma). */
+function enhancedAmmoOf(item, state, chamber) {
+  const ammo = chamber !== null && chamber >= 0 ? state.chambers?.[chamber] ?? null
+    : item.getInstalledItems?.("ammo")?.[0] ? ammoSnapshot(item.getInstalledItems("ammo")[0]) : null;
+  return ammo ? getCapabilities({ flags: { [MODULE_ID]: ammo.flags } }).find((c) => c.type === "enhanced-smart-ammo") ?? null : null;
+}
+
+/** Plan de munición del disparo; con carga, la munición por ataque de la carga (Omaha: 3). */
+function planShot(item, active, mode, whileCharged) {
+  const perAttack = whileCharged?.ammoPerAttack
+    ? { count: whileCharged.ammoPerAttack, ifInsufficient: { consumeAll: true } }
+    : find(active, "ammo-per-attack") ?? null;
+  return item.system.isRanged
+    ? shotPlan({ magazine: item.system.magazine?.value ?? 0, mode, perAttack, minToFire: find(active, "min-ammo-to-fire")?.count ?? null })
+    : { blocked: null, consume: null, insufficientDamage: null };
+}
+
 function prepareAttack(item, actor, roll, caps, state) {
   const mode = attackMode(rollClass(roll));
   const active = activeCaps(caps, actor);
@@ -120,12 +137,7 @@ function prepareAttack(item, actor, roll, caps, state) {
 
   const chargeCap = find(active, "chargeable");
   const whileCharged = chargeCap && chargeOf(actor, item) && !chargeOf(actor, item).disabled ? chargeCap.whileCharged ?? {} : null;
-  const perAttack = whileCharged?.ammoPerAttack
-    ? { count: whileCharged.ammoPerAttack, ifInsufficient: { consumeAll: true } }
-    : find(active, "ammo-per-attack") ?? null;
-  const plan = item.system.isRanged
-    ? shotPlan({ magazine: item.system.magazine?.value ?? 0, mode, perAttack, minToFire: find(active, "min-ammo-to-fire")?.count ?? null })
-    : { blocked: null, consume: null, insufficientDamage: null };
+  const plan = planShot(item, active, mode, whileCharged);
   if (plan.blocked) return block(roll, L(`gear.${plan.blocked}`, { name }));
 
   const rico = find(active, "ricochet");
@@ -134,7 +146,54 @@ function prepareAttack(item, actor, roll, caps, state) {
     roll.addMod([{ value: rico.attackMod ?? -4, source: L("gear.ricochetMod"), id: "er2070-ricochet" }]);
   }
   roll.er2070 = { mode, consume: plan.consume, insufficientDamage: plan.insufficientDamage, chamber, charged: Boolean(whileCharged), ricochet };
+  // 0.5.5: opciones de la ventana de ataque (cobertura, rebote, disparo cargado) y su estado inicial.
+  roll.er2070Opts = { ranged: Boolean(item.system.isRanged), ricochet: rico ? { attackMod: rico.attackMod ?? -4, aimedIgnoresMod: rico.aimedIgnoresMod !== false, gmConfirm: Boolean(rico.gmConfirm) } : null, chargeable: Boolean(chargeCap) };
+  roll.er2070Choice = { cover: "none", ricochet, charged: Boolean(whileCharged) };
+  // Munición inteligente mejorada: segundo intento si falla por el margen o menos (lo resuelve el veredicto).
+  const enhanced = smart && item.system.isRanged ? enhancedAmmoOf(item, state, chamber) : null;
+  if (enhanced) markRetry(roll, { base: enhanced.retry?.base ?? 14, maxMargin: enhanced.retry?.maxMargin ?? 5, ignoreVisibility: Boolean(enhanced.ignoreVisibility) });
   return roll;
+}
+
+// ---------------------------------------------------------------- ventana de ataque: modificadores 2070 (0.5.5)
+
+const COVER_IDS = { light: "er2070-cover-light", partial: "er2070-cover-partial" };
+
+/** Cobertura, rebote y disparo cargado en la ventana de RED. Cada opción añade o quita su modificador de la tirada. */
+function onRenderAttackDialog(app, html) {
+  const r = app.rollData;
+  const opts = r?.er2070Opts;
+  if (!opts?.ranged || !r.er2070Choice) return;
+  const root = html[0] ?? html;
+  const list = root.querySelector?.(".dialog-list");
+  if (!list || list.querySelector(".er2070-mods")) return;
+  const c = r.er2070Choice;
+  const rows = [];
+  if (setting("coverModifiers")) {
+    const radio = (v, label) => `<label class="er2070-mod-opt"><input type="radio" name="er2070-cover" value="${v}" ${c.cover === v ? "checked" : ""}> ${label}</label>`;
+    rows.push(`<div class="er2070-mod-row"><span class="er2070-mod-name">${L("gear.mods.cover")}</span>
+      ${radio("none", L("gear.mods.coverNone"))}${radio("light", L("gear.mods.coverLight", { value: setting("coverLight") }))}${radio("partial", L("gear.mods.coverPartial", { value: setting("coverPartial") }))}</div>`);
+  }
+  if (opts.ricochet) rows.push(`<label class="er2070-mod-row er2070-mod-opt"><input type="checkbox" name="er2070-ricochet" ${c.ricochet ? "checked" : ""}> ${L("gear.mods.ricochet", { value: opts.ricochet.attackMod })}</label>`);
+  if (opts.chargeable) rows.push(`<label class="er2070-mod-row er2070-mod-opt"><input type="checkbox" name="er2070-charged" ${c.charged ? "checked" : ""}> ${L("gear.mods.charged")}</label>`);
+  if (!rows.length) return;
+  list.insertAdjacentHTML("beforeend", `<li class="dialog-item er2070-mods"><div class="er2070-mods-title">${L("gear.mods.title")}</div>${rows.join("")}</li>`);
+  const box = list.querySelector(".er2070-mods");
+  box.querySelectorAll("input[name=er2070-cover]").forEach((i) => i.addEventListener("change", () => {
+    c.cover = i.value;
+    for (const id of Object.values(COVER_IDS)) if (r.mods.some((m) => m.id === id)) r.removeMod(id);
+    if (c.cover !== "none") r.addMod([{ value: setting(c.cover === "light" ? "coverLight" : "coverPartial"), source: L(`gear.mods.${c.cover === "light" ? "coverLightSource" : "coverPartialSource"}`), id: COVER_IDS[c.cover] }]);
+    app.render();
+  }));
+  box.querySelector("input[name=er2070-ricochet]")?.addEventListener("change", (e) => {
+    c.ricochet = e.target.checked;
+    if (r.mods.some((m) => m.id === "er2070-ricochet")) r.removeMod("er2070-ricochet");
+    if (c.ricochet) r.addMod([{ value: opts.ricochet.attackMod, source: L("gear.ricochetMod"), id: "er2070-ricochet" }]);
+    app.render();
+  });
+  box.querySelector("input[name=er2070-charged]")?.addEventListener("change", (e) => { c.charged = e.target.checked; });
+  // La ventana de RED fija su altura antes de este hook: se ajusta para que el bloque no quede bajo los botones.
+  app.setPosition({ height: "auto" });
 }
 
 /** Ajustes de daño; idempotente (se aplica al crear y otra vez al confirmar, por si el diálogo cambió algo). */
@@ -251,7 +310,7 @@ async function afterAttack(item, actor, roll, info) {
       rof: w.rof ?? "—",
       cover: w.coverPierce ? L(`gear.cover.${w.coverPierce}`) : "—",
       sp: w.spMultiplier ?? 1,
-    }) + (w.silhouettes ? ` ${L("gear.silhouettes")}` : ""));
+    }) + (w.silhouettes ? ` ${L("gear.silhouettes")}` : "") + (info.chargedFromDialog ? ` ${L("gear.chargedMove")}` : ""));
     const charge = realEffect(actor, chargeOf(actor, item));
     if (charge) {
       if (chargeCap.release === "endOfTurn" && game.combat?.started) {
@@ -262,17 +321,14 @@ async function afterAttack(item, actor, roll, info) {
   if (info.ricochet) {
     patch.ricochetArmed = false;
     const rico = find(caps, "ricochet");
-    notes.push(L("gear.ricochetShot", { radius: rico?.spreadRadius ?? "—" }));
+    notes.push(L("gear.ricochetShot", { radius: rico?.spreadRadius ?? "—" }) + (rico?.gmConfirm ? ` ${L("gear.ricochetGm")}` : ""));
   }
   await setState(item, patch);
   if (notes.length) await chat(actor, `<p><strong>${esc(item.name)}</strong></p>${notes.map((n) => `<p>${n}</p>`).join("")}`);
   await applyUserRequirements(item, actor, caps);
 
-  // Munición inteligente mejorada: segundo intento si el arma es inteligente.
-  const smart = find(caps, "smart-weapon");
-  const ammo = patch.lastShot.ammo ?? (item.getInstalledItems?.("ammo")?.[0] ? ammoSnapshot(item.getInstalledItems("ammo")[0]) : null);
-  const enhanced = ammo ? getCapabilities({ flags: { [MODULE_ID]: ammo.flags } }).find((c) => c.type === "enhanced-smart-ammo") : null;
-  if (smart && enhanced && smartOk(smart, actor) && item.system.isRanged) afterRoll(roll, actor, (r) => postRetry(actor, item, r, enhanced));
+  // 0.5.5: el segundo intento de la munición inteligente mejorada lo ofrece la franja del veredicto (verdict.js),
+  // solo si el ataque falla por el margen o menos. Las tarjetas antiguas conservan su botón (doRetry).
 }
 
 async function afterDamage(item, actor, roll) {
@@ -294,6 +350,7 @@ async function onConfirmRoll(wrapped, cprRoll, ...args) {
   const info = cprRoll?.er2070;
   try {
     if (weapon && info && isAttack(cprRoll)) {
+      applyAttackChoices(item, actor, cprRoll, info);
       if (info.chamber !== null && info.chamber >= 0) useChamberAmmo(item, getState(item).chambers?.[info.chamber]);
       // RED gasta 1 bala (10 en autofuego): se sustituye solo para este disparo.
       if (info.consume !== null) item.bulletConsumption = () => info.consume;
@@ -313,24 +370,29 @@ async function onConfirmRoll(wrapped, cprRoll, ...args) {
   return result;
 }
 
+/** Elecciones de la ventana de ataque: rebote (sin −4 en tiro de precisión) y disparo cargado (CdT 1, munición por ataque). */
+function applyAttackChoices(item, actor, roll, info) {
+  const c = roll.er2070Choice;
+  const opts = roll.er2070Opts;
+  if (!c || !opts) return;
+  info.ricochet = Boolean(opts.ricochet && c.ricochet);
+  const aimed = roll.isAimed || info.mode === "aimed";
+  if (info.ricochet && aimed && opts.ricochet.aimedIgnoresMod && roll.mods.some((m) => m.id === "er2070-ricochet")) roll.removeMod("er2070-ricochet");
+  if (!info.ricochet && roll.mods.some((m) => m.id === "er2070-ricochet")) roll.removeMod("er2070-ricochet");
+  if (opts.chargeable && Boolean(c.charged) !== info.charged) {
+    const active = activeCaps(weaponCaps(item), actor);
+    const whileCharged = c.charged ? find(active, "chargeable")?.whileCharged ?? {} : null;
+    const plan = planShot(item, active, info.mode, whileCharged);
+    info.charged = Boolean(c.charged);
+    info.chargedFromDialog = Boolean(c.charged);
+    if (!plan.blocked) Object.assign(info, { consume: plan.consume, insufficientDamage: plan.insufficientDamage });
+  }
+  info.cover = c.cover;
+}
+
 // ---------------------------------------------------------------- segundo intento y elección de crítico
 
-function penaltiesOf(roll) {
-  const mods = (roll.mods ?? []).map((m) => Number(m.value) || 0);
-  const extra = (roll.additionalMods ?? []).map((v) => Number.parseInt(v, 10) || 0);
-  return [...mods, ...extra].filter((v) => v < 0).reduce((a, b) => a + b, 0);
-}
-
-function postRetry(actor, item, roll, cap) {
-  const retry = { actorUuid: actor.uuid, base: cap.retry?.base ?? 14, maxMargin: cap.retry?.maxMargin ?? 5, penalties: penaltiesOf(roll), first: roll.resultTotal, used: false };
-  const visibility = cap.ignoreVisibility ? `<p>${L("gear.ignoreVisibility")}</p>` : "";
-  return ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content: `<div class="er2070-chat"><p>${L("gear.retryOffer", { name: esc(item.name), margin: retry.maxMargin, base: retry.base, penalties: retry.penalties })}</p>${visibility}
-      <button type="button" data-er2070-action="retry">${L("gear.retryBtn")}</button></div>`,
-    flags: { [MODULE_ID]: { retry } },
-  });
-}
+// 0.5.5: la oferta del segundo intento está en la franja del veredicto (verdict.js). doRetry atiende las tarjetas antiguas.
 
 async function d10Red() {
   const first = await new Roll("1d10").evaluate();
@@ -769,6 +831,8 @@ export function registerGearHooks() {
   libWrapper.register(MODULE_ID, `${actor}._calcMaxHumanity`, onCalcMaxHumanity, "WRAPPER");
   libWrapper.register(MODULE_ID, `${actor}.getWoundStateMods`, onWoundStateMods, "WRAPPER");
   libWrapper.register(MODULE_ID, `${actor}.createRoll`, onActorCreateRoll, "WRAPPER");
+
+  Hooks.on("renderCPRRollDialog", (app, html) => { if (!rollSafeMode()) onRenderAttackDialog(app, html); });
 
   Hooks.on("getActorSheetHeaderButtons", (sheet, buttons) => {
     if (!["character", "mook"].includes(sheet.actor?.type)) return;

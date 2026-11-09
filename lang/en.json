@@ -99,6 +99,18 @@
       "rollSafeMode": {
         "name": "Safe roll mode (base system only)",
         "hint": "Emergency switch. When checked, Edgerunners 2070 stops modifying rolls and Cyberpunk RED rolls are used as they are: no DV chosen in the dialog, no verdict banner or defence buttons, no 2070 modifiers (weapons, special ammunition, effective stats, wound states) and no automatic effects after attacks or damage. RED's damage droplet is shown again. The rest of the module keeps working. Applies immediately; messages already posted do not change."
+      },
+      "coverModifiers": {
+        "name": "Cover in the attack window (house rule)",
+        "hint": "Adds a light or partial cover choice to ranged attacks, with its penalty. RED has no partial cover (cover stops the bullet or not): this is a house rule."
+      },
+      "coverLight": {
+        "name": "Light cover penalty",
+        "hint": "Attack modifier against a target with light cover. Default −1 (like low light in RED)."
+      },
+      "coverPartial": {
+        "name": "Partial cover penalty",
+        "hint": "Attack modifier against a target with partial cover. Default −2 (like a complex task in RED)."
       }
     },
     "net": {
@@ -240,7 +252,7 @@
       "chargeBtn": "Charge",
       "charged": "Charged",
       "chargedName": "{name} charged",
-      "chargedMove": "{actor} charges {name} (uses their move action).",
+      "chargedMove": "Charged in this attack: spends the move action.",
       "chargedFree": "{actor} charges {name}.",
       "chargedShot": "Charged shot: ROF {rof}; pierces {cover}; target SP ×{sp}. The GM confirms the pierced cover.",
       "silhouettes": "Shows silhouettes through cover.",
@@ -306,7 +318,19 @@
         "grapple": "grapples and throws",
         "wieldWeapon": "wielding weapons",
         "forceObject": "forcing objects"
-      }
+      },
+      "mods": {
+        "title": "2070 modifiers",
+        "cover": "Cover",
+        "coverNone": "None",
+        "coverLight": "Light ({value})",
+        "coverPartial": "Partial ({value})",
+        "coverLightSource": "Light cover (house rule)",
+        "coverPartialSource": "Partial cover (house rule)",
+        "ricochet": "Ricochet ({value}; no penalty on an aimed shot)",
+        "charged": "Charged shot (spends the move action)"
+      },
+      "ricochetGm": "The GM validates the ricochet path."
     },
     "life": {
       "drugEffect": "{name} (effect)",
@@ -434,7 +458,18 @@
       "dodgeCard": "Dodge or defense: the result is applied on the attack card.",
       "assignOne": "Target exactly one token and click again.",
       "noEvasion": "{name} has no Evasion skill.",
-      "vsDefense": "against defense {value} ({name})"
+      "vsDefense": "against defense {value} ({name})",
+      "retry": {
+        "btn": "Second attempt ({base} + 1d10; miss by {margin} or less)",
+        "label": "second attempt",
+        "done": "Second attempt: {total} = {base} + {die} (1d10) + {luck} (LUCK) {penalties} (penalties). First shot: {first}.",
+        "title": "Second attempt (enhanced smart ammo)",
+        "hint": "First shot: {first}. Roll {base} + 1d10 + LUCK keeping the penalties ({penalties}), against the same DV or dodge. Only if the first missed by {margin} or less.",
+        "luck": "LUCK to spend (max {max})",
+        "roll": "Roll",
+        "notAllowed": "The second attempt is only allowed if the attack missed by {margin} or less.",
+        "card": "Second attempt: {total} = {base} + {die} (1d10) + {luck} (LUCK) {penalties} (penalties)."
+      }
     },
     "safeMode": {
       "on": "Safe roll mode on: rolls are back to Cyberpunk RED.",

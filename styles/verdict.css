@@ -102,3 +102,11 @@
 .er2070-dv-info { font-size: 0.92em; padding: 0.2rem 0; opacity: 0.9; }
 .er2070-adjust .form-group input[type="number"] { max-width: 6em; }
 .er2070-adjust .notes { margin-top: 0; }
+
+/* 0.5.5: modificadores 2070 en la ventana de ataque (cobertura, rebote, disparo cargado). */
+.er2070-mods { display: flex; flex-direction: column; gap: 3px; padding: 4px 0; }
+.er2070-mods .er2070-mods-title { font-weight: bold; }
+.er2070-mods .er2070-mod-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.er2070-mods .er2070-mod-name { min-width: 6em; }
+.er2070-mods .er2070-mod-opt { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.er2070-mods input[type="radio"], .er2070-mods input[type="checkbox"] { margin: 0; flex: none; }

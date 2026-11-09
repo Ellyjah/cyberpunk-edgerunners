@@ -99,6 +99,18 @@
       "rollSafeMode": {
         "name": "Modo seguro de tiradas (solo sistema base)",
         "hint": "Interruptor de emergencia. Con la casilla marcada, Edgerunners 2070 deja de modificar las tiradas y se usan las de Cyberpunk RED tal cual: sin VD elegida en el diálogo, sin banner de veredicto ni botones de defensa, sin modificadores 2070 (armas, munición especial, características efectivas, estados de herida) y sin efectos automáticos tras atacar o dañar. La gota de daño de RED vuelve a verse. El resto del módulo sigue funcionando. Se aplica al momento; los mensajes ya publicados no cambian."
+      },
+      "coverModifiers": {
+        "name": "Cobertura en la ventana de ataque (regla de la casa)",
+        "hint": "Añade a los ataques a distancia la elección de cobertura ligera o parcial, con su penalización. RED no tiene cobertura parcial (una cobertura detiene la bala o no): es una regla de la casa."
+      },
+      "coverLight": {
+        "name": "Penalización por cobertura ligera",
+        "hint": "Modificador del ataque contra un objetivo con cobertura ligera. Por defecto −1 (como la poca luz en RED)."
+      },
+      "coverPartial": {
+        "name": "Penalización por cobertura parcial",
+        "hint": "Modificador del ataque contra un objetivo con cobertura parcial. Por defecto −2 (como una tarea compleja en RED)."
       }
     },
     "net": {
@@ -240,7 +252,7 @@
       "chargeBtn": "Cargar",
       "charged": "Cargada",
       "chargedName": "{name} cargada",
-      "chargedMove": "{actor} carga {name} (gasta su acción de movimiento).",
+      "chargedMove": "Carga hecha en este ataque: gasta la acción de movimiento.",
       "chargedFree": "{actor} carga {name}.",
       "chargedShot": "Disparo cargado: CdT {rof}; atraviesa {cover}; CP del objetivo ×{sp}. La cobertura atravesada la valida el DJ.",
       "silhouettes": "Permite ver siluetas a través de la cobertura.",
@@ -306,7 +318,19 @@
         "grapple": "presas y derribos",
         "wieldWeapon": "manejar armas",
         "forceObject": "forzar objetos"
-      }
+      },
+      "mods": {
+        "title": "Modificadores 2070",
+        "cover": "Cobertura",
+        "coverNone": "Ninguna",
+        "coverLight": "Ligera ({value})",
+        "coverPartial": "Parcial ({value})",
+        "coverLightSource": "Cobertura ligera (regla de la casa)",
+        "coverPartialSource": "Cobertura parcial (regla de la casa)",
+        "ricochet": "Rebote ({value}; sin penalización en un tiro de precisión)",
+        "charged": "Disparo cargado (gasta la acción de movimiento)"
+      },
+      "ricochetGm": "El DJ valida la trayectoria del rebote."
     },
     "life": {
       "drugEffect": "{name} (efecto)",
@@ -449,7 +473,18 @@
         "GrenadeLauncher": "Lanzagranadas",
         "SMG": "Subfusil"
       },
-      "vsDefense": "contra defensa {value} ({name})"
+      "vsDefense": "contra defensa {value} ({name})",
+      "retry": {
+        "btn": "Segundo intento ({base} + 1d10; falla por {margin} o menos)",
+        "label": "segundo intento",
+        "done": "Segundo intento: {total} = {base} + {die} (1d10) + {luck} (SUE) {penalties} (penalizaciones). Primer disparo: {first}.",
+        "title": "Segundo intento (munición inteligente mejorada)",
+        "hint": "Primer disparo: {first}. Se tira {base} + 1d10 + SUE y se conservan las penalizaciones ({penalties}), contra la misma VD o esquiva. Solo si el primero falló por {margin} o menos.",
+        "luck": "SUE a gastar (máx. {max})",
+        "roll": "Tirar",
+        "notAllowed": "El segundo intento solo se puede hacer si el ataque falló por {margin} o menos.",
+        "card": "Segundo intento: {total} = {base} + {die} (1d10) + {luck} (SUE) {penalties} (penalizaciones)."
+      }
     },
     "safeMode": {
       "on": "Modo seguro de tiradas activado: las tiradas vuelven a ser las de Cyberpunk RED.",

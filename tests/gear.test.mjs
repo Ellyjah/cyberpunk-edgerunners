@@ -66,6 +66,14 @@ test("Segundo intento solo con fallo por margen permitido", () => {
   assert.equal(retryAllowed(14, 13, 3), false);
 });
 
+test("Munición inteligente mejorada: segundo intento si falla por 5 o menos (Mission Kit)", () => {
+  assert.equal(retryAllowed(10, 15, 5), true); // falla por 5
+  assert.equal(retryAllowed(12, 15, 5), true); // falla por 3
+  assert.equal(retryAllowed(15, 15, 5), true); // empate: falla por 0
+  assert.equal(retryAllowed(9, 15, 5), false); // falla por 6
+  assert.equal(retryAllowed(16, 15, 5), false); // acierta
+});
+
 test("Daño desarmado por TCO", () => {
   assert.deepEqual([3, 5, 9, 12].map((b) => unarmedDamage(b)), ["1d6", "2d6", "3d6", "4d6"]);
   assert.equal(unarmedDamage(3, { cyberArm: true }), "2d6");
