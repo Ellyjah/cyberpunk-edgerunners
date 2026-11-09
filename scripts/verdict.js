@@ -385,6 +385,14 @@ function onRender(message, html) {
 
 const write = (message, d) => message.update({ [PATH]: d });
 
+/** Margen del último impacto de ráfaga del que se pidió el daño; lo consume la tirada de daño de esa arma. */
+let pendingAutofire = null;
+export function takeAutofireMargin(itemId) {
+  const p = pendingAutofire;
+  pendingAutofire = null;
+  return p && p.itemId === itemId && Date.now() - p.at < 10000 ? p.margin : null;
+}
+
 async function act(message, action, event) {
   const d = foundry.utils.deepClone(message.getFlag(MODULE_ID, FLAG));
   if (!d) return;
@@ -393,6 +401,9 @@ async function act(message, action, event) {
     case "roll-damage": {
       if (damageLocked(d)) return;
       const link = event.target.closest(".message")?.querySelector('[data-action="rollDamage"]');
+      // Ráfaga: RED pone ×1 en la ventana de daño; el multiplicador es lo que el ataque supera la VD o la esquiva.
+      const ev = evaluate(d);
+      pendingAutofire = d.mode === "autofire" && ev.hit ? { itemId: link?.dataset.itemId, margin: ev.total - ev.against, at: Date.now() } : null;
       return link?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey }));
     }
     case "dodge": return rollDodge(message, d, event);

@@ -7,7 +7,7 @@ import { MODULE_ID, getCapabilities, rollSafeMode } from "./schema.js";
 import { shotPlan, effectiveStat, evaluateCondition, retryAllowed, beatsDv, unarmedDamage, ignoreArmorFromMultiplier, firingChamber, attackMode, stackSatisfied } from "./rules.js";
 import { L, esc, gmExec, registerHandler, registerRequest, requestOperations, userOwns, denied, resolveActor, actorCapabilities, chat, createCarrier, carriersOf, applyOperations } from "./effects.js";
 import { countInterfaceRoll } from "./net.js";
-import { tagRoll, markRetry } from "./verdict.js";
+import { tagRoll, markRetry, takeAutofireMargin } from "./verdict.js";
 
 const RED_ID = "cyberpunk-red-core";
 const setting = (key) => game.settings.get(MODULE_ID, key);
@@ -256,6 +256,10 @@ function onCreateRoll(wrapped, type, actor, extraData = []) {
     tagRoll(roll, actor, item);
     if (weapon && isAttack(roll)) return prepareAttack(item, actor, roll, caps, state);
     if (weapon && isDamage(roll)) applyDamageMods(item, actor, roll, caps, state);
+    if (weapon && isDamage(roll) && roll.isAutofire) {
+      const margin = takeAutofireMargin(item.id);
+      if (margin > 0) roll.autofireMultiplier = roll.autofireMultiplierMax ? Math.min(margin, roll.autofireMultiplierMax) : margin;
+    }
     if (item.type === "skill" && actor) applyArmedStat(actor, roll, item.system.stat);
   } catch (err) {
     console.error(`${MODULE_ID} |`, err);

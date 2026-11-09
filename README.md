@@ -27,7 +27,9 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.5.5 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas y modificadores 2070 en la ventana de ataque)
+## Estado actual: 0.5.6 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas y modificadores 2070 en la ventana de ataque)
+
+- **0.5.6:** multiplicador del daño de ráfaga. RED abre la ventana de daño de fuego automático con ×1 porque no sabe por cuánto superó el ataque la VD; con 2d6 × 1 casi nunca se atraviesa una armadura. Al pulsar «Tirar daño» en la franja de un impacto de ráfaga, el motor pone como multiplicador el margen del veredicto (lo que el ataque supera la VD o la esquiva), con el tope del arma y de la munición. Por ejemplo, +3 da ×3 y +7 con un fusil de asalto da ×4. El jugador puede cambiarlo en la ventana antes de tirar. En el modo seguro no se toca.
 
 - **0.5.5:** bloque **Modificadores 2070** en la ventana de ataque de RED (no aparece en el modo seguro):
   - **Cobertura** (regla de la casa, en ataques a distancia): ninguna, ligera (−1) o parcial (−2). Los valores se cambian en la configuración y el bloque se puede desactivar. RED no tiene cobertura parcial.
