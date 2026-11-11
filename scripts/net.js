@@ -324,6 +324,122 @@ registerRequest("quickhack", async ({ sourceActorUuid, hackUuid, capId, targetUu
   return { apply };
 });
 
+// ---------------------------------------------------------------- dispositivos (0.6.0)
+
+/** Capacidad `device` del actor (cámara, torreta, ascensor…), o null. */
+const deviceOf = (actor) => (actor ? actorCapabilities(actor, "device")[0] ?? null : null);
+// VD habituales de los dispositivos (Mission Kit y libro básico); el campo admite cualquier otra.
+const DEVICE_DVS = [6, 8, 9, 10, 12, 13, 15, 17, 21];
+
+function deviceDialog(actor, { title, free }) {
+  const luckMax = actor.system.stats.luck.value;
+  return new Promise((resolve) => {
+    new Dialog({
+      title,
+      content: `<form class="er2070-form">
+        ${free ? `<label>${L("net.deviceLabel")} <input type="text" name="label" placeholder="${L("net.freeDefault")}"></label>
+        <label>${L("net.dv")} <input type="number" name="dv" value="8" min="1" list="er2070-device-dvs"></label>
+        <datalist id="er2070-device-dvs">${DEVICE_DVS.map((v) => `<option value="${v}"></option>`).join("")}</datalist>` : ""}
+        <label>${L("net.modifier")} <input type="number" name="mod" value="0"></label>
+        <label>${L("net.luck")} <input type="number" name="luck" value="0" min="0" max="${luckMax}"></label>
+      </form>`,
+      buttons: {
+        ok: {
+          label: L("net.hack"),
+          callback: (html) => {
+            const f = (html[0] ?? html).querySelector("form");
+            const dv = free ? Number.parseInt(f.dv.value, 10) : null;
+            if (free && !(dv > 0)) return resolve(null);
+            resolve({ label: free ? f.label.value.trim() : "", dv, mod: Number(f.mod.value) || 0, luck: Math.max(0, Math.min(Number(f.luck.value) || 0, luckMax)) });
+          },
+        },
+        cancel: { label: L("editor.cancel"), callback: () => resolve(null) },
+      },
+      default: "ok",
+      close: () => resolve(null),
+    }).render(true);
+  });
+}
+
+/** Interface + 1d10 (+ modificador y Suerte) contra una VD; cuenta como acción de RED. */
+async function deviceRoll(actor, choice, dv) {
+  await countNetAction(actor);
+  if (choice.luck) await actor.update({ "system.stats.luck.value": actor.system.stats.luck.value - choice.luck });
+  const r = await interfaceRoll(actor, choice.mod + choice.luck);
+  return { r, ok: beatsDv(r.value, dv) };
+}
+
+/** Hackear el dispositivo marcado: mismo alcance y línea de visión que un neuropuerto, sin barreras. */
+async function deviceHack(actor, ownToken) {
+  const tgtDoc = targetToken();
+  const target = tgtDoc?.actor;
+  const cap = deviceOf(target);
+  if (!cap) return ui.notifications.warn(L("net.noDevice"));
+  const myDoc = tokenDocOf(actor, ownToken);
+  if (!myDoc || myDoc.parent !== tgtDoc.parent) return ui.notifications.warn(L("net.noOwnToken"));
+  const range = maxRange(actor, "remote");
+  if (range === null) return ui.notifications.warn(L("net.noDeck"));
+  const dist = distance(myDoc, tgtDoc);
+  if (dist > range) return ui.notifications.warn(L("net.outOfRange", { distance: Math.round(dist), range }));
+  if (wallBetween(myDoc, tgtDoc)) return ui.notifications.warn(L("net.noSight"));
+  const choice = await deviceDialog(actor, { title: L("net.deviceTitle", { target: target.name }), free: false });
+  if (!choice) return;
+  const { r, ok } = await deviceRoll(actor, choice, cap.dv);
+  const effect = ok && cap.effect ? `<p>${esc(cap.effect)}</p>` : "";
+  await chat(actor, `<p>${L("net.deviceRoll", { actor: esc(actor.name), target: esc(target.name), value: r.value, dv: cap.dv })}${critText(r)} — ${L(ok ? "net.success" : "net.failure")}</p>${effect}`, { rolls: r.rolls });
+  if (ok && cap.controllable) await gmExec("deviceControl", { deviceUuid: target.uuid, actorUuid: actor.uuid });
+}
+
+/** Hackear un dispositivo que no tiene ficha: el jugador elige la VD. */
+async function freeHack(actor) {
+  if (!deckOf(actor)) return ui.notifications.warn(L("net.noDeck"));
+  const choice = await deviceDialog(actor, { title: L("net.freeTitle"), free: true });
+  if (!choice) return;
+  const { r, ok } = await deviceRoll(actor, choice, choice.dv);
+  const label = choice.label ? esc(choice.label) : L("net.freeDefault");
+  await chat(actor, `<p>${L("net.deviceRoll", { actor: esc(actor.name), target: label, value: r.value, dv: choice.dv })}${critText(r)} — ${L(ok ? "net.success" : "net.failure")}</p>`, { rolls: r.rolls });
+}
+
+/** Dispositivos de la escena (actores del mundo y de tokens) que controla `actor`. */
+function controlledBy(actor) {
+  const tokens = canvas.scene?.tokens.filter((t) => !t.actorLink && t.actor).map((t) => t.actor) ?? [];
+  return [...game.actors.contents, ...tokens].filter((d) => {
+    const s = d.getFlag(MODULE_ID, "state.device");
+    return s && sameActor(resolveActor(s.controller), actor);
+  });
+}
+
+const OWNER = () => CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+
+// El DJ concede la propiedad del dispositivo a los jugadores del netrunner para que lo usen con la ficha de RED.
+registerHandler("deviceControl", async ({ deviceUuid, actorUuid }, userId) => {
+  const user = game.users.get(userId);
+  const device = resolveActor(deviceUuid);
+  const runner = resolveActor(actorUuid);
+  if (!device || !runner || !userOwns(user, runner) || !deviceOf(device)?.controllable) return denied(user, "deviceControl", device?.name ?? "");
+  const before = device.getFlag(MODULE_ID, "state.device");
+  const original = before?.ownership ?? foundry.utils.deepClone(device.ownership);
+  const players = game.users.filter((u) => !u.isGM && runner.testUserPermission(u, "OWNER")).map((u) => u.id);
+  const ownership = { ...original };
+  for (const id of players) ownership[id] = OWNER();
+  await device.update({ ownership, [`flags.${MODULE_ID}.state.device`]: { controller: runner.uuid, ownership: original, players } });
+  await chat(runner, `<p>${L("net.deviceControlled", { actor: esc(runner.name), target: esc(device.name) })}</p>`);
+});
+
+registerHandler("deviceRelease", async ({ deviceUuid }, userId) => {
+  const user = game.users.get(userId);
+  const device = resolveActor(deviceUuid);
+  const state = device?.getFlag(MODULE_ID, "state.device");
+  if (!state) return;
+  const runner = resolveActor(state.controller);
+  if (!user.isGM && !userOwns(user, runner)) return denied(user, "deviceRelease", device.name);
+  // Cada jugador vuelve a su permiso anterior (o al heredado, si no tenía uno propio).
+  const ownership = { ...state.ownership };
+  for (const id of state.players ?? []) ownership[id] = state.ownership?.[id] ?? CONST.DOCUMENT_OWNERSHIP_LEVELS.INHERIT;
+  await device.update({ ownership, [`flags.${MODULE_ID}.state.-=device`]: null });
+  await chat(runner ?? device, `<p>${L("net.deviceReleased", { actor: esc(runner?.name ?? ""), target: esc(device.name) })}</p>`);
+});
+
 async function disconnect(actor, index, { unsafe = false, reason = "" } = {}) {
   const state = getNet(actor);
   const [conn] = state.connections.splice(index, 1);
@@ -439,6 +555,10 @@ class NetConsole extends Application {
       .map(({ actor: a, conn }) => `<li>${esc(a.name)} · ${L(`net.mode.${conn.mode}`)} <button data-action="expel" data-uuid="${a.uuid}">${L("net.expel")}</button></li>`)
       .join("");
 
+    const device = deviceOf(tgt);
+    const controlled = controlledBy(actor)
+      .map((d) => `<li>${esc(d.name)} <button data-action="device-release" data-uuid="${d.uuid}">${L("net.release")}</button></li>`).join("");
+
     const locks = state.lockouts.filter((l) => l.until > game.time.worldTime)
       .map((l) => `<li>${esc(resolveActor(l.target)?.name)}: ${Math.ceil((l.until - game.time.worldTime) / 60)} min</li>`).join("");
 
@@ -450,6 +570,13 @@ class NetConsole extends Application {
         <button data-action="connect-remote">${L("net.connectRemote")}</button>
         <button data-action="connect-cable">${L("net.connectCable")}</button>
       </div>
+      <h3>${L("net.devicesHeader")}</h3>
+      ${device ? `<p>${L("net.deviceTarget", { target: esc(tgt.name), dv: device.dv })}</p>` : ""}
+      <div class="er2070-buttons">
+        ${device ? `<button data-action="device-hack">${L("net.deviceHack")}</button>` : ""}
+        <button data-action="device-free">${L("net.freeHack")}</button>
+      </div>
+      ${controlled ? `<p>${L("net.controlledHeader")}</p><ul>${controlled}</ul>` : ""}
       <h3>${L("net.connectionsHeader")}</h3>${conns ? `<ul>${conns}</ul>` : `<p>${L("net.none")}</p>`}
       <h3>${L("net.intrudersHeader")}</h3>${intruders ? `<ul>${intruders}</ul>` : `<p>${L("net.none")}</p>`}
       ${locks ? `<h3>${L("net.lockoutsHeader")}</h3><ul>${locks}</ul>` : ""}
@@ -475,6 +602,9 @@ class NetConsole extends Application {
           case "hack": await quickhack(this.actor, index); break;
           case "disconnect": await disconnect(this.actor, index); break;
           case "expel": await expel(this.actor, b.dataset.uuid); break;
+          case "device-hack": await deviceHack(this.actor, this.token); break;
+          case "device-free": await freeHack(this.actor); break;
+          case "device-release": await gmExec("deviceRelease", { deviceUuid: b.dataset.uuid }); break;
         }
       } finally {
         this.render(false);

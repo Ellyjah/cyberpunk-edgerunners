@@ -74,6 +74,15 @@ test("Munición inteligente mejorada: segundo intento si falla por 5 o menos (Mi
   assert.equal(retryAllowed(16, 15, 5), false); // acierta
 });
 
+test("Esquema: capacidad de dispositivo (0.6.0)", () => {
+  const ok = validate({ type: "gear", flags: { "edgerunners-2070": { schemaVersion: 1, capabilities: [
+    { id: "device", type: "device", dv: 12, effect: "La torreta obedece.", securityDv: 17, controllable: true },
+  ] } } });
+  assert.equal(ok.ok, true, JSON.stringify(ok.errors));
+  const bad = validate({ type: "gear", flags: { "edgerunners-2070": { capabilities: [{ id: "device", type: "device", controllable: "sí" }] } } });
+  assert.deepEqual(bad.errors.map((e) => e.code).sort(), ["badParam", "missingParam"]);
+});
+
 test("Daño desarmado por TCO", () => {
   assert.deepEqual([3, 5, 9, 12].map((b) => unarmedDamage(b)), ["1d6", "2d6", "3d6", "4d6"]);
   assert.equal(unarmedDamage(3, { cyberArm: true }), "2d6");

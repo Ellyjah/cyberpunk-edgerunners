@@ -2,7 +2,7 @@
   "id": "edgerunners-2070",
   "title": "Edgerunners 2070",
   "description": "Extensión no oficial para Cyberpunk RED – Core: capacidades genéricas para partidas ambientadas en los años 2070. No incluye contenido comercial. Contenido no oficial, no aprobado ni respaldado por R. Talsorian Games.",
-  "version": "0.5.6",
+  "version": "0.6.0",
   "authors": [{ "name": "Ellyjah" }],
   "compatibility": {
     "minimum": "12",
@@ -22,5 +22,8 @@
   ],
   "flags": {
     "verifiedSystemVersion": "v0.92.4"
-  }
+  },
+  "url": "https://github.com/Ellyjah/cyberpunk-edgerunners",
+  "manifest": "https://github.com/Ellyjah/cyberpunk-edgerunners/releases/latest/download/module.json",
+  "download": "https://github.com/Ellyjah/cyberpunk-edgerunners/releases/download/v0.6.0/edgerunners-2070-v0.6.0.zip"
 }

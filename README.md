@@ -30,6 +30,7 @@ Motor de reglas para **Foundry VTT 12** y el sistema **Cyberpunk RED – Core**,
 - Conexión al neuropuerto de un objetivo, a distancia o por cable, con alcance, cortafuegos y tirada para saber si el objetivo lo advierte.
 - Arquitectura personal (barreras, hielo negro y nodo de control), apertura de brechas y hackeos rápidos.
 - Expulsión de intrusos, desconexión segura o insegura, y contador de acciones NET por turno.
+- Hackeo de dispositivos (cámaras, torretas, ascensores…) desde la misma consola: con ficha de dispositivo, o sin ficha eligiendo la VD. Los dispositivos controlables pasan a manos del jugador del netrunner hasta que los libera.
 
 **Drogas, Humanidad y compras**
 - Drogas con efecto principal y duración, y tirada del efecto secundario al terminar.

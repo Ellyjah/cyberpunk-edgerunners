@@ -197,7 +197,21 @@
       "expelRoll": "{actor} tries to expel {intruder}: WILL + Concentration {def} vs Interface {att}",
       "expelled": "expelled",
       "notExpelled": "still connected",
-      "noGM": "No GM is connected to apply the effect."
+      "noGM": "No GM is connected to apply the effect.",
+      "devicesHeader": "Devices",
+      "deviceTarget": "Targeted device: {target} · DV {dv}",
+      "deviceHack": "Hack device",
+      "freeHack": "Hack without a sheet",
+      "noDevice": "The target is not a hackable device.",
+      "deviceTitle": "Hack {target}",
+      "freeTitle": "Hack a device without a sheet",
+      "deviceLabel": "Device (optional)",
+      "freeDefault": "a device",
+      "deviceRoll": "{actor} hacks {target}: Interface {value} vs DV {dv}",
+      "deviceControlled": "{target} is now controlled by {actor}. Their player can use the device sheet until releasing it from «Net 2070».",
+      "deviceReleased": "{actor} releases {target}: its previous permissions are restored.",
+      "controlledHeader": "Under your control:",
+      "release": "Release"
     },
     "effects": {
       "confirm": "Apply \"{name}\" to {actor}?",

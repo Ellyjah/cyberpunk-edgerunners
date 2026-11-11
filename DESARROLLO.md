@@ -27,7 +27,13 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.5.6 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas y modificadores 2070 en la ventana de ataque)
+## Estado actual: 0.6.0 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070 y dispositivos)
+
+- **0.6.0:** hackeo de dispositivos en la consola **Red 2070** (apartado «Dispositivos»; sin botones nuevos en la hoja):
+  - Capacidad `device` en un objeto de equipo equipado del actor-dispositivo: `{ dv, effect, securityDv, controllable }`.
+  - **Hackear dispositivo** (objetivo marcado con esa capacidad): Interface + 1d10 contra su VD, con modificador y Suerte. Mismo alcance y línea de visión que la conexión a distancia, sin neuropuerto ni barreras. Cuenta como acción de Red. Si tiene éxito, el chat muestra el efecto.
+  - **Dispositivo controlable** (p. ej., una torreta): el DJ concede la propiedad de su ficha a los jugadores del netrunner, que lo usan con las tiradas normales de RED. «Liberar», en la lista «Bajo tu control», restaura los permisos anteriores. Funciona con tokens enlazados y sin enlazar (RED crea los PNJ sin enlazar).
+  - **Hackear sin ficha:** para dispositivos que no tienen actor. El jugador elige la VD (sugerencias 6–21) y, si quiere, el nombre del dispositivo. Requiere un ciberterminal equipado.
 
 - **0.5.6:** multiplicador del daño de ráfaga. RED abre la ventana de daño de fuego automático con ×1 porque no sabe por cuánto superó el ataque la VD; con 2d6 × 1 casi nunca se atraviesa una armadura. Al pulsar «Tirar daño» en la franja de un impacto de ráfaga, el motor pone como multiplicador el margen del veredicto (lo que el ataque supera la VD o la esquiva), con el tope del arma y de la munición. Por ejemplo, +3 da ×3 y +7 con un fusil de asalto da ×4. El jugador puede cambiarlo en la ventana antes de tirar. En el modo seguro no se toca.
 

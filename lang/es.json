@@ -197,7 +197,21 @@
       "expelRoll": "{actor} intenta expulsar a {intruder}: VOL + Concentración {def} contra Interface {att}",
       "expelled": "expulsado",
       "notExpelled": "sigue conectado",
-      "noGM": "No hay ningún DJ conectado para aplicar el efecto."
+      "noGM": "No hay ningún DJ conectado para aplicar el efecto.",
+      "devicesHeader": "Dispositivos",
+      "deviceTarget": "Dispositivo marcado: {target} · VD {dv}",
+      "deviceHack": "Hackear dispositivo",
+      "freeHack": "Hackear sin ficha",
+      "noDevice": "El objetivo marcado no es un dispositivo hackeable.",
+      "deviceTitle": "Hackear {target}",
+      "freeTitle": "Hackear un dispositivo sin ficha",
+      "deviceLabel": "Dispositivo (opcional)",
+      "freeDefault": "un dispositivo",
+      "deviceRoll": "{actor} hackea {target}: Interface {value} contra VD {dv}",
+      "deviceControlled": "{target} queda bajo el control de {actor}. Su jugador puede usar la ficha del dispositivo hasta liberarlo desde «Red 2070».",
+      "deviceReleased": "{actor} libera {target}: vuelve a sus permisos anteriores.",
+      "controlledHeader": "Bajo tu control:",
+      "release": "Liberar"
     },
     "effects": {
       "confirm": "¿Aplicar «{name}» a {actor}?",

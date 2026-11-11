@@ -76,6 +76,8 @@ export const CAPABILITIES = {
     params: { minRank: "int!", dv: "int!", alerts: "bool", requiresUnaware: "bool", operations: "operations" },
   },
   "net-actions": { hosts: ["cyberware", "cyberdeck"], params: { bonus: "int!", when: "object", stackKey: "string", minStack: "int" } },
+  // 0.6.0: dispositivo hackeable desde la consola de Red (sin neuropuerto). Va en un objeto de equipo equipado del actor-dispositivo.
+  device: { hosts: ["gear"], params: { dv: "int!", effect: "string", securityDv: "int", controllable: "bool" } },
   "crit-bonus-damage": { hosts: ["weapon", "itemUpgrade"], params: { value: "int!" } },
   ricochet: { hosts: ["weapon", "itemUpgrade"], params: { attackMod: "int", aimedIgnoresMod: "bool", spreadRadius: "number" } },
   "smart-weapon": { hosts: ["weapon", "itemUpgrade"], params: {} },
