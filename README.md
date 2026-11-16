@@ -2,6 +2,8 @@
 
 Motor de reglas para **Foundry VTT 12** y el sistema **Cyberpunk RED – Core**, pensado para partidas ambientadas en los años 2070. Añade automatizaciones y herramientas de mesa sobre las fichas y tiradas de RED, sin modificar el sistema. No contiene objetos, actores, mapas ni textos comerciales: el contenido lo aportan otros módulos o el propio DJ mediante «capacidades» guardadas en los objetos.
 
+Las herramientas del motor se abren desde el menú **«2070 ▾»** de la cabecera de la ficha: Equipo, Red y, para el DJ, Humanidad o Recargo según el tipo de actor. El menú admite teclado, Escape y clic fuera; sustituye los accesos separados para ahorrar espacio.
+
 ## Qué hace
 
 **Veredicto de tiradas**
@@ -30,7 +32,8 @@ Motor de reglas para **Foundry VTT 12** y el sistema **Cyberpunk RED – Core**,
 - Conexión al neuropuerto de un objetivo, a distancia o por cable, con alcance, cortafuegos y tirada para saber si el objetivo lo advierte.
 - Arquitectura personal (barreras, hielo negro y nodo de control), apertura de brechas y hackeos rápidos.
 - Expulsión de intrusos, desconexión segura o insegura, y contador de acciones NET por turno.
-- Hackeo de dispositivos (cámaras, torretas, ascensores…) desde la misma consola: con ficha de dispositivo, o sin ficha eligiendo la VD. Los dispositivos controlables pasan a manos del jugador del netrunner hasta que los libera.
+- Hackeo de dispositivos (cámaras, torretas, ascensores…) desde la misma consola: con ficha de dispositivo, o sin ficha eligiendo la VD. Cada cesión de un dispositivo controlable requiere que el DJ la autorice. «Solicitar control» permite pedirlo también por motivos ajenos al netrunning, sin tirada, alcance ni gasto NET.
+- El jugador puede «Liberar» sus dispositivos. El DJ dispone de «Retirar control» en la consola, incluso si el personaje controlador ya no existe o el dispositivo está en otra escena. Las transferencias y retiradas restauran los permisos originales, incluidos los de los controladores anteriores.
 
 **Drogas, Humanidad y compras**
 - Drogas con efecto principal y duración, y tirada del efecto secundario al terminar.
@@ -42,6 +45,16 @@ Motor de reglas para **Foundry VTT 12** y el sistema **Cyberpunk RED – Core**,
 - «Estilo de hoja» opcional: hoja original, hoja 2070 o hoja 2070 clara.
 - **Modo seguro de tiradas:** interruptor del DJ que devuelve todas las tiradas al sistema base al momento.
 - Las acciones que afectan a otros actores las valida y ejecuta el cliente del DJ.
+
+## Cambios de la versión 0.6.1
+
+- Menú único «2070» en las cabeceras de las fichas, con las herramientas disponibles para cada usuario.
+
+- Aprobación explícita del DJ antes de conceder control; rechazar o cerrar conserva los permisos.
+- Solicitud manual para cesiones fuera del netrunning y retirada exclusiva del DJ.
+- Corrección de permisos persistentes al transferir un dispositivo entre jugadores, también en tokens sin enlazar. Se descartan autorizaciones pendientes si cambia el control o la propiedad.
+
+Los dispositivos con control activo de 0.6.0 conservan la instantánea necesaria para restaurar sus permisos. Si ya se liberaron con aquella versión y perdieron esa instantánea, el DJ debe revisar manualmente cualquier permiso residual desde la configuración de propiedad de Foundry.
 
 ## Dependencias
 

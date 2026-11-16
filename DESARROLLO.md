@@ -92,3 +92,17 @@ La fuente autorizada para las reglas está documentada en `../03-coordinacion/RE
 Lógica pura del esquema, con datos sintéticos: `node --test "tests/*.test.mjs"` (Node 20 o superior). Las pruebas en Foundry están descritas en `../03-coordinacion/PRUEBAS.md`.
 
 *Contenido no oficial, no aprobado ni respaldado por R. Talsorian Games.*
+
+
+### 0.6.1 — autorización y retirada de dispositivos
+
+`deviceControl` conserva su nombre de socket y valida personaje propio y capacidad controlable, pero siempre abre una confirmación explícita en el DJ activo. La solicitud manual no afirma un éxito de netrunning: el DJ decide su justificación. No consume acciones NET. El hackeo conserva sus comprobaciones y gasto; un éxito solicita la misma aprobación.
+
+`deviceRevoke` exige usuario DJ y no depende del controlador. `deviceRelease` sigue disponible para el propietario del controlador actual. Mutaciones en serie por UUID y restauración completa con claves de borrado `-=usuario` de Foundry; ninguna actualización global de flags con `recursive:false`. La instantánea original sobrevive a las transferencias. Las solicitudes duplicadas se rechazan; las pendientes se invalidan si cambia control, propiedad o destinatarios. El inventario del DJ incluye actores sintéticos de todas las escenas.
+
+Pruebas de regresión puras en `tests/device-control.test.mjs`. Pruebas nativas y evidencias privadas en coordinación (banco 30012); no se incluyen en el módulo público. No se pueden reconstruir permisos originales de controles ya liberados por 0.6.0 si su instantánea se eliminó.
+
+
+### Menú de herramientas de cabecera (0.6.1)
+
+`header-menu.js` agrupa exclusivamente los cuatro accesos propios después de que sus hooks apliquen los permisos existentes. Conserva los callbacks y el orden de los botones ajenos. Menú en un portal del DOM para evitar recortes de las fichas, limitado a la pantalla y con cierre al seleccionar, pulsar Escape/Tab, hacer clic fuera, redimensionar o cerrar/redibujar la ficha. Navegación por flechas, Inicio/Fin y activación por teclado. Los listeners globales se retiran al cerrarlo. Las acciones contextuales de las consolas y los botones de los journals mantienen su ubicación.

@@ -211,7 +211,22 @@
       "deviceControlled": "{target} queda bajo el control de {actor}. Su jugador puede usar la ficha del dispositivo hasta liberarlo desde «Red 2070».",
       "deviceReleased": "{actor} libera {target}: vuelve a sus permisos anteriores.",
       "controlledHeader": "Bajo tu control:",
-      "release": "Liberar"
+      "release": "Liberar",
+      "requestControl": "Solicitar control",
+      "revokeControl": "Retirar control",
+      "controlRequested": "Solicitud de control enviada al DJ.",
+      "controlPending": "Ya hay una solicitud pendiente para este dispositivo.",
+      "controlChanged": "El control, los permisos o los destinatarios han cambiado. Solicita el control de nuevo.",
+      "controlApprovalTitle": "Autorizar control de dispositivo",
+      "controlApproval": "{user} solicita que {actor} controle {target}.",
+      "previousController": "Controlador anterior: {actor}.",
+      "controlRecipients": "Jugadores que recibirán permisos de propietario: {users}.",
+      "noController": "Sin controlador",
+      "missingController": "Controlador no disponible",
+      "authorizeControl": "Autorizar",
+      "rejectControl": "Rechazar",
+      "gmDevicesHeader": "Dispositivos controlados (DJ)",
+      "deviceRevoked": "El DJ retira el control de {target} y restaura sus permisos originales."
     },
     "effects": {
       "confirm": "¿Aplicar «{name}» a {actor}?",
@@ -504,6 +519,9 @@
       "on": "Modo seguro de tiradas activado: las tiradas vuelven a ser las de Cyberpunk RED.",
       "off": "Modo seguro de tiradas desactivado: Edgerunners 2070 vuelve a automatizar las tiradas.",
       "active": "Edgerunners 2070: el modo seguro de tiradas está activo. Las tiradas son las del sistema base."
+    },
+    "tools": {
+      "label": "Herramientas 2070"
     }
   }
 }

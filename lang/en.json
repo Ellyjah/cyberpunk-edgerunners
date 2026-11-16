@@ -211,7 +211,22 @@
       "deviceControlled": "{target} is now controlled by {actor}. Their player can use the device sheet until releasing it from «Net 2070».",
       "deviceReleased": "{actor} releases {target}: its previous permissions are restored.",
       "controlledHeader": "Under your control:",
-      "release": "Release"
+      "release": "Release",
+      "requestControl": "Request control",
+      "revokeControl": "Revoke control",
+      "controlRequested": "Control request sent to the GM.",
+      "controlPending": "A request for this device is already pending.",
+      "controlChanged": "Control, permissions or recipients have changed. Request control again.",
+      "controlApprovalTitle": "Authorize device control",
+      "controlApproval": "{user} requests that {actor} control {target}.",
+      "previousController": "Previous controller: {actor}.",
+      "controlRecipients": "Players receiving owner permission: {users}.",
+      "noController": "No controller",
+      "missingController": "Controller unavailable",
+      "authorizeControl": "Authorize",
+      "rejectControl": "Reject",
+      "gmDevicesHeader": "Controlled devices (GM)",
+      "deviceRevoked": "The GM revokes control of {target} and restores its original permissions."
     },
     "effects": {
       "confirm": "Apply \"{name}\" to {actor}?",
@@ -489,6 +504,9 @@
       "on": "Safe roll mode on: rolls are back to Cyberpunk RED.",
       "off": "Safe roll mode off: Edgerunners 2070 automates rolls again.",
       "active": "Edgerunners 2070: safe roll mode is active. Rolls are the base system ones."
+    },
+    "tools": {
+      "label": "2070 tools"
     }
   }
 }

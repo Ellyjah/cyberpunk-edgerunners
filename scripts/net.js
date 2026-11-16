@@ -2,6 +2,7 @@
  * Netrunning 2070 (M4): conexión a neuropuertos, arquitectura personal, hackeos rápidos,
  * expulsión, desconexión y contador de acciones NET.
  */
+import { ownershipPatch } from "./device-control.js";
 import { MODULE_ID, getCapabilities } from "./schema.js";
 import { netActionsForRank, parseDvList, neuroArchitecture, redD10, attackerWins, firewallRequired, quickhackBlocked, netActionBonus, beatsDv } from "./rules.js";
 import { L, esc, gmExec, registerHandler, registerRequest, requestOperations, userOwns, denied, serialize, resolveActor, actorCapabilities, chat, getTurn, saveTurn, combatantOf, sameActor, chooseItems, eligibleItems } from "./effects.js";
@@ -387,7 +388,7 @@ async function deviceHack(actor, ownToken) {
   const { r, ok } = await deviceRoll(actor, choice, cap.dv);
   const effect = ok && cap.effect ? `<p>${esc(cap.effect)}</p>` : "";
   await chat(actor, `<p>${L("net.deviceRoll", { actor: esc(actor.name), target: esc(target.name), value: r.value, dv: cap.dv })}${critText(r)} — ${L(ok ? "net.success" : "net.failure")}</p>${effect}`, { rolls: r.rolls });
-  if (ok && cap.controllable) await gmExec("deviceControl", { deviceUuid: target.uuid, actorUuid: actor.uuid });
+  if (ok && cap.controllable) await requestDeviceControl(actor, target);
 }
 
 /** Hackear un dispositivo que no tiene ficha: el jugador elige la VD. */
@@ -400,45 +401,99 @@ async function freeHack(actor) {
   await chat(actor, `<p>${L("net.deviceRoll", { actor: esc(actor.name), target: label, value: r.value, dv: choice.dv })}${critText(r)} — ${L(ok ? "net.success" : "net.failure")}</p>`, { rolls: r.rolls });
 }
 
-/** Dispositivos de la escena (actores del mundo y de tokens) que controla `actor`. */
+/** Incluye actores sintéticos de todas las escenas para que el DJ pueda retirar su control. */
+function controlledDevices() {
+  const tokens = game.scenes.contents.flatMap((scene) => scene.tokens.filter((t) => !t.actorLink && t.actor).map((t) => t.actor));
+  return [...game.actors.contents, ...tokens].filter((d) => d.getFlag(MODULE_ID, "state.device"));
+}
+
 function controlledBy(actor) {
-  const tokens = canvas.scene?.tokens.filter((t) => !t.actorLink && t.actor).map((t) => t.actor) ?? [];
-  return [...game.actors.contents, ...tokens].filter((d) => {
-    const s = d.getFlag(MODULE_ID, "state.device");
-    return s && sameActor(resolveActor(s.controller), actor);
-  });
+  return controlledDevices().filter((d) => sameActor(resolveActor(d.getFlag(MODULE_ID, "state.device").controller), actor));
 }
 
 const OWNER = () => CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+const pendingDevices = new Set();
+const deviceRevisions = new Map();
+const deviceLock = (uuid) => `device-control:${uuid}`;
+const deviceSignature = (device) => JSON.stringify([device.getFlag(MODULE_ID, "state.device") ?? null, device.ownership]);
+const controllerPlayers = (runner) => game.users.filter((u) => !u.isGM && runner.testUserPermission(u, "OWNER")).map((u) => u.id).sort();
+const advanceDevice = (uuid) => deviceRevisions.set(uuid, (deviceRevisions.get(uuid) ?? 0) + 1);
 
-// El DJ concede la propiedad del dispositivo a los jugadores del netrunner para que lo usen con la ficha de RED.
+async function requestDeviceControl(actor, device) {
+  if (!game.users.activeGM) return ui.notifications.error(L("net.noGM"));
+  if (!deviceOf(device)?.controllable) return ui.notifications.warn(L("net.noDevice"));
+  ui.notifications.info(L("net.controlRequested"));
+  return gmExec("deviceControl", { deviceUuid: device.uuid, actorUuid: actor.uuid });
+}
+
+function approveDeviceControl(user, runner, device, players) {
+  const previous = resolveActor(device.getFlag(MODULE_ID, "state.device")?.controller);
+  return new Promise((resolve) => new Dialog({
+    title: L("net.controlApprovalTitle"),
+    content: `<div class="er2070-device-approval">
+      <p>${L("net.controlApproval", { user: esc(user.name), actor: esc(runner.name), target: esc(device.name) })}</p>
+      <p>${L("net.previousController", { actor: esc(previous?.name ?? L("net.noController")) })}</p>
+      <p>${L("net.controlRecipients", { users: esc(players.map((id) => game.users.get(id)?.name).join(", ") || L("net.none")) })}</p>
+    </div>`,
+    buttons: {
+      approve: { label: L("net.authorizeControl"), callback: () => resolve(true) },
+      reject: { label: L("net.rejectControl"), callback: () => resolve(false) },
+    },
+    default: "reject",
+    close: () => resolve(false),
+  }).render(true));
+}
+
+// Todas las vías (hackeo, solicitud manual o socket) pasan por la aceptación explícita del DJ.
 registerHandler("deviceControl", async ({ deviceUuid, actorUuid }, userId) => {
   const user = game.users.get(userId);
   const device = resolveActor(deviceUuid);
   const runner = resolveActor(actorUuid);
   if (!device || !runner || !userOwns(user, runner) || !deviceOf(device)?.controllable) return denied(user, "deviceControl", device?.name ?? "");
-  const before = device.getFlag(MODULE_ID, "state.device");
-  const original = before?.ownership ?? foundry.utils.deepClone(device.ownership);
-  const players = game.users.filter((u) => !u.isGM && runner.testUserPermission(u, "OWNER")).map((u) => u.id);
-  const ownership = { ...original };
-  for (const id of players) ownership[id] = OWNER();
-  await device.update({ ownership, [`flags.${MODULE_ID}.state.device`]: { controller: runner.uuid, ownership: original, players } });
-  await chat(runner, `<p>${L("net.deviceControlled", { actor: esc(runner.name), target: esc(device.name) })}</p>`);
+  if (pendingDevices.has(device.uuid)) return ui.notifications.warn(L("net.controlPending"));
+  const signature = deviceSignature(device);
+  const revision = deviceRevisions.get(device.uuid) ?? 0;
+  const players = controllerPlayers(runner);
+  pendingDevices.add(device.uuid);
+  try {
+    if (!await approveDeviceControl(user, runner, device, players)) return;
+    await serialize(deviceLock(device.uuid), async () => {
+      const current = resolveActor(deviceUuid);
+      const source = resolveActor(actorUuid);
+      const requester = game.users.get(userId);
+      if (game.user !== game.users.activeGM || !current || !source || !userOwns(requester, source) || !deviceOf(current)?.controllable) return denied(requester, "deviceControl");
+      if ((deviceRevisions.get(current.uuid) ?? 0) !== revision || deviceSignature(current) !== signature || JSON.stringify(controllerPlayers(source)) !== JSON.stringify(players)) return ui.notifications.warn(L("net.controlChanged"));
+      const before = current.getFlag(MODULE_ID, "state.device");
+      const original = foundry.utils.deepClone(before?.ownership ?? current.ownership);
+      await current.update({ ownership: ownershipPatch(current.ownership, original, players, OWNER()), [`flags.${MODULE_ID}.state.device`]: { controller: source.uuid, ownership: original, players } });
+      advanceDevice(current.uuid);
+      await chat(source, `<p>${L("net.deviceControlled", { actor: esc(source.name), target: esc(current.name) })}</p>`);
+    });
+  } finally {
+    pendingDevices.delete(device.uuid);
+  }
 });
 
-registerHandler("deviceRelease", async ({ deviceUuid }, userId) => {
+async function releaseDevice(deviceUuid, userId, gmOnly) {
   const user = game.users.get(userId);
-  const device = resolveActor(deviceUuid);
-  const state = device?.getFlag(MODULE_ID, "state.device");
-  if (!state) return;
-  const runner = resolveActor(state.controller);
-  if (!user.isGM && !userOwns(user, runner)) return denied(user, "deviceRelease", device.name);
-  // Cada jugador vuelve a su permiso anterior (o al heredado, si no tenía uno propio).
-  const ownership = { ...state.ownership };
-  for (const id of state.players ?? []) ownership[id] = state.ownership?.[id] ?? CONST.DOCUMENT_OWNERSHIP_LEVELS.INHERIT;
-  await device.update({ ownership, [`flags.${MODULE_ID}.state.-=device`]: null });
-  await chat(runner ?? device, `<p>${L("net.deviceReleased", { actor: esc(runner?.name ?? ""), target: esc(device.name) })}</p>`);
-});
+  if (!user || (gmOnly && !user.isGM)) return denied(user, "deviceRevoke");
+  deviceUuid = resolveActor(deviceUuid)?.uuid;
+  if (!deviceUuid) return;
+  return serialize(deviceLock(deviceUuid), async () => {
+    const device = resolveActor(deviceUuid);
+    const state = device?.getFlag(MODULE_ID, "state.device");
+    const runner = state ? resolveActor(state.controller) : null;
+    if (!user.isGM && (!state || !userOwns(user, runner))) return denied(user, "deviceRelease", device?.name ?? "");
+    // También invalida una solicitud pendiente sobre un dispositivo sin controlador.
+    advanceDevice(deviceUuid);
+    if (!state) return;
+    await device.update({ ownership: ownershipPatch(device.ownership, state.ownership), [`flags.${MODULE_ID}.state.-=device`]: null });
+    await chat(runner ?? device, `<p>${L(gmOnly ? "net.deviceRevoked" : "net.deviceReleased", { actor: esc(runner?.name ?? ""), target: esc(device.name) })}</p>`);
+  });
+}
+
+registerHandler("deviceRelease", ({ deviceUuid }, userId) => releaseDevice(deviceUuid, userId, false));
+registerHandler("deviceRevoke", ({ deviceUuid }, userId) => releaseDevice(deviceUuid, userId, true));
 
 async function disconnect(actor, index, { unsafe = false, reason = "" } = {}) {
   const state = getNet(actor);
@@ -559,6 +614,11 @@ class NetConsole extends Application {
     const controlled = controlledBy(actor)
       .map((d) => `<li>${esc(d.name)} <button data-action="device-release" data-uuid="${d.uuid}">${L("net.release")}</button></li>`).join("");
 
+    const gmDevices = game.user.isGM ? controlledDevices().map((d) => {
+      const controller = resolveActor(d.getFlag(MODULE_ID, "state.device").controller);
+      return `<li>${esc(d.name)} · ${esc(controller?.name ?? L("net.missingController"))} <button data-action="device-revoke" data-uuid="${d.uuid}">${L("net.revokeControl")}</button></li>`;
+    }).join("") : "";
+
     const locks = state.lockouts.filter((l) => l.until > game.time.worldTime)
       .map((l) => `<li>${esc(resolveActor(l.target)?.name)}: ${Math.ceil((l.until - game.time.worldTime) / 60)} min</li>`).join("");
 
@@ -574,9 +634,11 @@ class NetConsole extends Application {
       ${device ? `<p>${L("net.deviceTarget", { target: esc(tgt.name), dv: device.dv })}</p>` : ""}
       <div class="er2070-buttons">
         ${device ? `<button data-action="device-hack">${L("net.deviceHack")}</button>` : ""}
+        ${device?.controllable ? `<button data-action="device-request">${L("net.requestControl")}</button>` : ""}
         <button data-action="device-free">${L("net.freeHack")}</button>
       </div>
       ${controlled ? `<p>${L("net.controlledHeader")}</p><ul>${controlled}</ul>` : ""}
+      ${gmDevices ? `<h3>${L("net.gmDevicesHeader")}</h3><ul>${gmDevices}</ul>` : ""}
       <h3>${L("net.connectionsHeader")}</h3>${conns ? `<ul>${conns}</ul>` : `<p>${L("net.none")}</p>`}
       <h3>${L("net.intrudersHeader")}</h3>${intruders ? `<ul>${intruders}</ul>` : `<p>${L("net.none")}</p>`}
       ${locks ? `<h3>${L("net.lockoutsHeader")}</h3><ul>${locks}</ul>` : ""}
@@ -603,6 +665,8 @@ class NetConsole extends Application {
           case "disconnect": await disconnect(this.actor, index); break;
           case "expel": await expel(this.actor, b.dataset.uuid); break;
           case "device-hack": await deviceHack(this.actor, this.token); break;
+          case "device-request": await requestDeviceControl(this.actor, targetToken()?.actor); break;
+          case "device-revoke": if (game.user.isGM) await gmExec("deviceRevoke", { deviceUuid: b.dataset.uuid }); break;
           case "device-free": await freeHack(this.actor); break;
           case "device-release": await gmExec("deviceRelease", { deviceUuid: b.dataset.uuid }); break;
         }
@@ -649,5 +713,5 @@ export function registerNetHooks() {
     }
   });
 
-  for (const hook of ["updateActor", "updateCombat", "updateCombatant", "targetToken", "deleteCombat"]) Hooks.on(hook, refreshConsoles);
+  for (const hook of ["updateActor", "deleteActor", "deleteToken", "updateCombat", "updateCombatant", "targetToken", "deleteCombat"]) Hooks.on(hook, refreshConsoles);
 }
