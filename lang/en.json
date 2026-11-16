@@ -505,6 +505,38 @@
       "off": "Safe roll mode off: Edgerunners 2070 automates rolls again.",
       "active": "Edgerunners 2070: safe roll mode is active. Rolls are the base system ones."
     },
+    "netArch": {
+      "title": "NET Architecture: {name}",
+      "open": "Open NET architecture",
+      "tool": "NET Architecture",
+      "reveal": "Reveal next",
+      "hide": "Hide last",
+      "reset": "Reset",
+      "progress": "Floors revealed: {n} of {total}",
+      "dv": "DV {dv}",
+      "nothing": "No NET architecture has been revealed.",
+      "noData": "This page has no NET architecture data.",
+      "invalid": "The NET architecture data is not valid:",
+      "inCompendium": "This page is in a compendium: import the journal into the world to reveal floors.",
+      "type": {
+        "password": "Password",
+        "blackIce": "Black ICE",
+        "controlNode": "Control Node",
+        "file": "File"
+      },
+      "validation": {
+        "notObject": "is not an object",
+        "version": "unsupported schema version (expected {version})",
+        "name": "name is missing",
+        "floors": "at least one floor is required",
+        "floor": "floor is not an object",
+        "type": "unknown type (valid: {types})",
+        "dv": "DV must be a positive integer",
+        "notes": "notes must be text",
+        "uuid": "invalid UUID",
+        "revealed": "must be an integer between 0 and {max}"
+      }
+    },
     "tools": {
       "label": "2070 tools"
     }

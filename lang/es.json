@@ -520,6 +520,38 @@
       "off": "Modo seguro de tiradas desactivado: Edgerunners 2070 vuelve a automatizar las tiradas.",
       "active": "Edgerunners 2070: el modo seguro de tiradas está activo. Las tiradas son las del sistema base."
     },
+    "netArch": {
+      "title": "Arquitectura de Red: {name}",
+      "open": "Abrir arquitectura de Red",
+      "tool": "Arquitectura de Red",
+      "reveal": "Revelar siguiente",
+      "hide": "Ocultar último",
+      "reset": "Reiniciar",
+      "progress": "Pisos revelados: {n} de {total}",
+      "dv": "VD {dv}",
+      "nothing": "No hay ninguna arquitectura de Red desvelada.",
+      "noData": "Esta página no tiene datos de arquitectura de Red.",
+      "invalid": "Los datos de la arquitectura de Red no son válidos:",
+      "inCompendium": "La página está en un compendio: importa el journal al mundo para revelar pisos.",
+      "type": {
+        "password": "Contraseña",
+        "blackIce": "Hielo negro",
+        "controlNode": "Nodo de control",
+        "file": "Archivo"
+      },
+      "validation": {
+        "notObject": "no es un objeto",
+        "version": "versión de esquema no admitida (se espera {version})",
+        "name": "falta el nombre",
+        "floors": "hace falta al menos un piso",
+        "floor": "el piso no es un objeto",
+        "type": "tipo desconocido (válidos: {types})",
+        "dv": "la VD debe ser un entero positivo",
+        "notes": "las notas deben ser texto",
+        "uuid": "UUID no válido",
+        "revealed": "debe ser un entero entre 0 y {max}"
+      }
+    },
     "tools": {
       "label": "Herramientas 2070"
     }

@@ -27,7 +27,13 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.6.0 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070 y dispositivos)
+## Estado actual: 0.7.0 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070, dispositivos y arquitecturas de Red)
+
+- **0.7.0:** ventana **Arquitectura de Red** (`scripts/netarch.js`, `styles/netarch.css`; contrato NET-ARCH-1 de `CONTRATOS.md`). El motor no trae arquitecturas: los datos van en la bandera `netArchitecture` de una página de journal.
+  - **DJ:** botón «Abrir arquitectura de Red» en la página (en `[data-er2070-net]` o `.av2070-net-launch`; si no hay marca, arriba). Ventana con todos los pisos, sus notas y enlaces al hielo negro y al dispositivo, y los botones «Revelar siguiente», «Ocultar último» y «Reiniciar». El número de pisos revelados se guarda en la página (solo en páginas del mundo, no de compendio).
+  - **Jugadores:** la ventana se abre sola en todas las pantallas al revelar un piso y se actualiza al ocultar o reiniciar. En el socket del motor reciben nombre, tipo y VD de los pisos revelados, solo de un DJ; no necesitan permiso sobre la página. Esto filtra la vista del módulo, no impide inspeccionar la bandera completa enviada por Foundry con el documento. Quien entra a mitad de escena recibe el estado al conectarse. La herramienta «Arquitectura de Red» de los controles de token vuelve a abrir lo revelado.
+  - Tarjeta por piso con número, tipo, nombre, VD y un circuito SVG del color del tipo (cian contraseña, rojo hielo negro, verde nodo de control, ámbar archivo). Varias arquitecturas a la vez, cada una en su ventana.
+  - API: `openNetArchitecture(pageOrUuid)` y `validateNetArchitecture(data)`.
 
 - **0.6.0:** hackeo de dispositivos en la consola **Red 2070** (apartado «Dispositivos»; sin botones nuevos en la hoja):
   - Capacidad `device` en un objeto de equipo equipado del actor-dispositivo: `{ dv, effect, securityDv, controllable }`.
@@ -106,3 +112,14 @@ Pruebas de regresión puras en `tests/device-control.test.mjs`. Pruebas nativas 
 ### Menú de herramientas de cabecera (0.6.1)
 
 `header-menu.js` agrupa exclusivamente los cuatro accesos propios después de que sus hooks apliquen los permisos existentes. Conserva los callbacks y el orden de los botones ajenos. Menú en un portal del DOM para evitar recortes de las fichas, limitado a la pantalla y con cierre al seleccionar, pulsar Escape/Tab, hacer clic fuera, redimensionar o cerrar/redibujar la ficha. Navegación por flechas, Inicio/Fin y activación por teclado. Los listeners globales se retiran al cerrarlo. Las acciones contextuales de las consolas y los botones de los journals mantienen su ubicación.
+
+
+### Correcciones previas a publicar 0.7.0 (A070-02, A070-03 y O070-01)
+
+Las órdenes netArchCommand se remiten al DJ activo mediante gmExec, validan la identidad DJ real del remitente y serializan lectura/modificación/escritura por UUID de página en ese cliente. Se vuelve a comprobar el DJ activo al ejecutar la cola; los compendios no admiten escritura. Una cola independiente en cada DJ no resolvería la carrera.
+
+El título de la ventana usa el nombre resuelto por fromUuid antes de renderizar, también para páginas incrustadas de compendio. El getter no consulta fromUuidSync; los cambios de la página actualizan el nombre en caché.
+
+Privacidad (decisión del director conservada): playerView y el socket del motor omiten notas, UUID y pisos no revelados. Foundry distribuye las banderas y el texto de los documentos a los clientes incluso con permiso NONE, por lo que no son confidenciales frente a su inspección. No se añade cifrado, otra contraseña ni un almacén alternativo.
+
+Regresiones automatizadas en tests/netarch-regressions.test.mjs: dos remitentes DJ, órdenes concurrentes revelar/ocultar, remitente jugador, operación desconocida, título asíncrono y consulta sin escritura de compendio.

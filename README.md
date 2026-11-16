@@ -35,6 +35,12 @@ Las herramientas del motor se abren desde el menú **«2070 ▾»** de la cabece
 - Hackeo de dispositivos (cámaras, torretas, ascensores…) desde la misma consola: con ficha de dispositivo, o sin ficha eligiendo la VD. Cada cesión de un dispositivo controlable requiere que el DJ la autorice. «Solicitar control» permite pedirlo también por motivos ajenos al netrunning, sin tirada, alcance ni gasto NET.
 - El jugador puede «Liberar» sus dispositivos. El DJ dispone de «Retirar control» en la consola, incluso si el personaje controlador ya no existe o el dispositivo está en otra escena. Las transferencias y retiradas restauran los permisos originales, incluidos los de los controladores anteriores.
 
+**Arquitecturas de Red**
+- Botón «Abrir arquitectura de Red» en las páginas de journal preparadas por el DJ. Cada piso tiene su tipo, nombre, VD opcional y circuito gráfico; el DJ dispone también de notas y enlaces.
+- El DJ revela, oculta y reinicia los pisos. Los jugadores reciben la vista revelada y pueden volver a abrirla desde los controles del lienzo; el estado se conserva y se recupera al entrar tarde. Admite varias arquitecturas.
+- Las órdenes de todos los DJ se ejecutan en serie por página desde el DJ activo. Las páginas de compendio se abren en modo de consulta; importa el journal al mundo para revelar pisos.
+- **Privacidad:** el motor filtra su ventana de jugador y sus mensajes de socket. Los permisos nativos de Foundry no hacen confidenciales las banderas ni el texto del diario: un jugador que inspeccione los datos de su cliente podría leer los pisos ocultos y las notas. Se mantienen esos permisos, sin cifrado adicional.
+
 **Drogas, Humanidad y compras**
 - Drogas con efecto principal y duración, y tirada del efecto secundario al terminar.
 - Consola de Humanidad para el DJ: incidentes de pérdida o ganancia y evaluación mensual.
@@ -45,6 +51,12 @@ Las herramientas del motor se abren desde el menú **«2070 ▾»** de la cabece
 - «Estilo de hoja» opcional: hoja original, hoja 2070 o hoja 2070 clara.
 - **Modo seguro de tiradas:** interruptor del DJ que devuelve todas las tiradas al sistema base al momento.
 - Las acciones que afectan a otros actores las valida y ejecuta el cliente del DJ.
+
+## Cambios de la versión 0.7.0
+
+- Ventana «Arquitectura de Red», sincronización de pisos revelados y consulta de varias arquitecturas.
+- Corregida la pérdida de órdenes cuando varios DJ revelan pisos a la vez y la apertura de páginas de compendio.
+- Conserva la aprobación y retirada del control de dispositivos y el menú único «2070» de la 0.6.1.
 
 ## Cambios de la versión 0.6.1
 

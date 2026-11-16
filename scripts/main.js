@@ -5,6 +5,7 @@ import { registerGearHooks } from "./gear.js";
 import { registerLifeHooks } from "./life.js";
 import { registerVerdictHooks } from "./verdict.js";
 import { registerHeaderMenuHooks } from "./header-menu.js";
+import { registerNetArchHooks, startNetArch, openNetArchitecture, validateNetArchitecture } from "./netarch.js";
 
 const RED_ID = "cyberpunk-red-core";
 const TAB = "edgerunners-2070";
@@ -84,7 +85,7 @@ Hooks.once("init", () => {
     requiresReload: false,
     onChange: applyTheme,
   });
-  game.modules.get(MODULE_ID).api = { schemaVersion: SCHEMA_VERSION, validate, migrate, getCapabilities, suspendAllCarriers, restoreSuspendedCarriers };
+  game.modules.get(MODULE_ID).api = { schemaVersion: SCHEMA_VERSION, validate, migrate, getCapabilities, suspendAllCarriers, restoreSuspendedCarriers, openNetArchitecture, validateNetArchitecture };
 });
 
 /**
@@ -113,10 +114,12 @@ Hooks.once("setup", () => {
   registerLifeHooks();
   registerVerdictHooks();
   registerHeaderMenuHooks();
+  registerNetArchHooks();
 });
 Hooks.once("ready", () => {
   if (game.system.id !== RED_ID) return;
   listenSocket();
+  startNetArch();
   if (game.user.isGM && rollSafeMode()) ui.notifications.warn(L("safeMode.active"), { permanent: true });
   // Efectos suspendidos al desactivar el módulo: se restauran al volver a activarlo (R05).
   if (game.user === game.users.activeGM) {

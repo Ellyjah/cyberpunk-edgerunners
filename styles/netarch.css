@@ -1,0 +1,44 @@
+/* Ventana «Arquitectura de Red» (0.7.0). Paleta Edgerunners con valores fijos y fondo oscuro propio:
+   se lee igual con cualquier estilo de hoja y en modo claro u oscuro. Colores por tipo de piso:
+   cian contraseña, rojo hielo negro, verde nodo de control, ámbar archivo. */
+.er2070-netarch {
+  --na-bg: #0d0f10;
+  --na-card: #16191b;
+  --na-text: #e8e8e8;
+  --na-muted: #9aa0a3;
+  --na-yellow: #f4e300;
+  --na-gradient: linear-gradient(100deg, #70b931 0%, #b6cf18 45%, #f4e300 100%);
+  --na-password: #22d3ee;
+  --na-blackIce: #ff3b3b;
+  --na-controlNode: #70b931;
+  --na-file: #ffb000;
+}
+.er2070-netarch .window-header { background: #000000; color: var(--na-yellow); border-bottom: 3px solid transparent; border-image: var(--na-gradient) 1; }
+.er2070-netarch .window-header .window-title,
+.er2070-netarch .window-header a { color: var(--na-yellow); }
+.er2070-netarch .window-content { background: var(--na-bg); color: var(--na-text); padding: 0.6rem; font-family: "ER2070 Rajdhani", "Jost", sans-serif; }
+.er2070-na-progress { margin: 0 0 0.5rem; color: var(--na-muted); font-size: 0.95em; }
+.er2070-na-warn { margin: 0 0 0.5rem; color: var(--na-file); font-weight: 600; }
+.er2070-na-buttons { display: flex; gap: 0.35rem; margin-bottom: 0.6rem; }
+.er2070-na-buttons button { flex: 1; background: #000000; color: var(--na-text); border: 1px solid #70b931; border-radius: 2px; font-family: inherit; }
+.er2070-na-buttons button:hover:not(:disabled) { background: #1f2a12; box-shadow: none; }
+.er2070-na-buttons button:disabled { opacity: 0.4; }
+.er2070-na-floors { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.er2070-na-floor { --na-color: var(--na-password); color: var(--na-color); background: var(--na-card); border-left: 4px solid var(--na-color); padding: 0.35rem 0.5rem 0.4rem; }
+.er2070-na-floor.er2070-na-blackIce { --na-color: var(--na-blackIce); }
+.er2070-na-floor.er2070-na-controlNode { --na-color: var(--na-controlNode); }
+.er2070-na-floor.er2070-na-file { --na-color: var(--na-file); }
+.er2070-na-floor.er2070-na-current { box-shadow: 0 0 0 1px var(--na-color), 0 0 10px -2px var(--na-color); }
+.er2070-na-floor.er2070-na-hidden { opacity: 0.45; border-left-style: dashed; }
+.er2070-na-head { display: flex; align-items: baseline; gap: 0.5rem; font-family: "ER2070 Saira Condensed", "Jost", sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+.er2070-na-num { font-weight: 700; font-size: 1.3em; min-width: 1.4em; }
+.er2070-na-type { font-weight: 600; font-size: 0.9em; }
+.er2070-na-dv { margin-left: auto; font-weight: 700; color: var(--na-text); }
+.er2070-na-name { color: var(--na-text); font-weight: 600; margin: 0.1rem 0 0.15rem; }
+.er2070-na-circuit { display: block; width: 100%; max-width: 240px; height: auto; }
+.er2070-na-notes,
+.er2070-na-links { margin: 0.25rem 0 0; color: var(--na-muted); font-size: 0.9em; }
+.er2070-na-links .content-link { background: #000000; color: var(--na-text); border-color: var(--na-color); }
+/* Botón en la página de journal (solo DJ). */
+button.er2070-na-launch { width: auto; margin: 0.3rem 0; padding: 0.1rem 0.8rem; background: #000000; color: #f4e300; border: 1px solid #70b931; border-radius: 2px; font-family: "ER2070 Rajdhani", "Jost", sans-serif; font-weight: 600; }
+button.er2070-na-launch:hover { background: #1f2a12; box-shadow: none; }
