@@ -191,6 +191,8 @@ class NetArchEditor extends (typeof Application === "undefined" ? Object : Appli
     this.sync();
     const current = this.page ? await fromUuid(this.page.uuid) : null;
     const data = normalizeArchitecture(this.draft, revealedCount(current?.flags?.[MODULE_ID]?.[FLAG]));
+    const audience = current?.flags?.[MODULE_ID]?.[FLAG]?.audience;
+    if (Array.isArray(audience)) data.audience = audience; // el público lo elige el DJ en la ventana, no aquí
     const check = validateNetArchitecture(data);
     if (!check.ok) {
       const where = (path) => {

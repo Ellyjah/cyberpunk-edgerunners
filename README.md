@@ -52,6 +52,16 @@ Las herramientas del motor se abren desde el menú **«2070 ▾»** de la cabece
 - **Modo seguro de tiradas:** interruptor del DJ que devuelve todas las tiradas al sistema base al momento.
 - Las acciones que afectan a otros actores las valida y ejecuta el cliente del DJ.
 
+## Cambios de la versión 0.9.0
+
+- **Arquitecturas de Red: el DJ elige qué jugadores las ven.**
+  - El botón «Mostrar a jugadores…» de la ventana del DJ abre una lista de jugadores con casillas. A los marcados se les abre la ventana; a los desmarcados se les cierra.
+  - Volver a pulsarlo reabre la ventana a quien la haya cerrado por accidente.
+- «Revelar siguiente», «Ocultar último» y «Reiniciar» ya no abren nada: actualizan la ventana de los jugadores elegidos que la tengan abierta, y «Reiniciar» se la cierra.
+- Los demás jugadores no reciben ningún dato de la arquitectura. La ventana del DJ indica quién la ve.
+- Quien recarga o entra tarde la recupera con la herramienta «Arquitectura de Red» de los controles de token.
+- Las arquitecturas que ya tenían pisos revelados no las ve nadie hasta que el DJ elige el público.
+
 ## Cambios de la versión 0.8.0
 
 - **Editor de arquitecturas de Red, sin código (solo DJ).** Se abre de tres formas:

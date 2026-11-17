@@ -42,7 +42,17 @@ export function validateNetArchitecture(data) {
   });
   const r = data.revealed;
   if (r !== undefined && !(Number.isInteger(r) && r >= 0 && r <= data.floors.length)) err("revealed", "revealed", { max: data.floors.length });
+  if (data.audience !== undefined && !(Array.isArray(data.audience) && data.audience.every(isText))) err("audience", "audience");
   return { ok: !errors.length, errors };
+}
+
+/** Jugadores (ids de usuario) que ven la arquitectura (0.9.0). Sin lista, nadie. */
+export const audienceOf = (data) => (Array.isArray(data?.audience) ? [...new Set(data.audience.filter(isText))] : []);
+
+/** Cambio de público: quién deja de verla (se le cierra) y la lista nueva, sin repetidos ni ids desconocidos. */
+export function audienceChange(data, users, knownIds) {
+  const next = [...new Set((users ?? []).filter((id) => isText(id) && knownIds.includes(id)))];
+  return { next, removed: audienceOf(data).filter((id) => !next.includes(id)) };
 }
 
 /** Pisos revelados, ya acotados al número de pisos. */
@@ -190,9 +200,14 @@ class NetArchWindow extends (typeof Application === "undefined" ? Object : Appli
       cards.push(card(f, i, { current: i === n - 1, hidden: i >= n, extra: notes + enriched }));
     }
     const locked = page.pack ? `<p class="er2070-na-warn">${L("netArch.inCompendium")}</p>` : "";
+    const names = audienceOf(data).map((id) => game.users.get(id)?.name).filter(Boolean);
     return `<div class="er2070-na er2070-na-gm">
       <p class="er2070-na-progress">${L("netArch.progress", { n, total: data.floors.length })}</p>
       ${locked}
+      <div class="er2070-na-share">
+        <span>${names.length ? L("netArch.audience.visibleTo", { names: esc(names.join(", ")) }) : L("netArch.audience.nobody")}</span>
+        <button type="button" data-action="audience" ${page.pack ? "disabled" : ""}><i class="fas fa-users"></i> ${L("netArch.audience.button")}</button>
+      </div>
       <div class="er2070-na-buttons">
         <button type="button" data-action="reveal" ${n >= data.floors.length || page.pack ? "disabled" : ""}><i class="fas fa-eye"></i> ${L("netArch.reveal")}</button>
         <button type="button" data-action="hide" ${n === 0 || page.pack ? "disabled" : ""}><i class="fas fa-eye-slash"></i> ${L("netArch.hide")}</button>
@@ -210,6 +225,7 @@ class NetArchWindow extends (typeof Application === "undefined" ? Object : Appli
     super.activateListeners(html);
     const root = html[0] ?? html;
     root.querySelectorAll("button[data-action]").forEach((b) => b.addEventListener("click", async () => {
+      if (b.dataset.action === "audience") return chooseAudience(this.uuid);
       b.disabled = true;
       try { await command(this.uuid, b.dataset.action); } finally { this.render(false); }
     }));
@@ -240,11 +256,15 @@ async function show(uuid) {
 
 const pageData = (page) => page?.flags?.[MODULE_ID]?.[FLAG];
 
-/** Envía a los jugadores la vista de una página. `to`: lista de usuarios (todos si falta). */
-function broadcast(page, { open = false, to } = {}) {
+/** Envía la vista de una página a sus jugadores (0.9.0: solo a los del público; `to` lo restringe más). Con `close`,
+ *  se les cierra y olvidan la arquitectura. Nada se abre salvo con `open` (botón «Mostrar a jugadores»). */
+function broadcast(page, { open = false, to, close = false } = {}) {
   const data = pageData(page);
   if (!data) return;
-  game.socket.emit(CHANNEL, { netArch: { uuid: page.uuid, revealed: revealedCount(data), open, ...playerView(data), ...(to ? { to } : {}) } });
+  const users = to ?? audienceOf(data);
+  if (!users.length) return;
+  const view = close ? { revealed: 0, name: "", floors: [], total: 0 } : { revealed: revealedCount(data), ...playerView(data) };
+  game.socket.emit(CHANNEL, { netArch: { uuid: page.uuid, open, ...view, close, to: users } });
 }
 
 /** Los DJ remiten las órdenes a una única autoridad, también cuando hay varios conectados. */
@@ -267,17 +287,55 @@ registerHandler("netArchCommand", async ({ uuid, op }, userId) => {
     const value = nextRevealed(data, op);
     if (value === before) return;
     await page.update({ [`flags.${MODULE_ID}.${FLAG}.revealed`]: value });
-    // Al revelar se abre en todas las pantallas; al ocultar solo se actualiza la que esté abierta.
-    broadcast(page, { open: value > before });
+    // 0.9.0: no abre nada; actualiza la ventana de los jugadores del público que la tengan abierta.
+    broadcast(page);
   });
 });
 
-/** Páginas del mundo con algún piso revelado. */
-const activePages = () => game.journal.contents.flatMap((j) => j.pages.contents).filter((p) => revealedCount(pageData(p)) > 0);
+/** Botón «Mostrar a jugadores» (0.9.0): el DJ elige el público; a los elegidos se les abre la ventana. */
+async function chooseAudience(uuid) {
+  const page = await fromUuid(uuid);
+  const data = pageData(page);
+  if (!data || page.pack) return;
+  const players = game.users.filter((u) => !u.isGM);
+  if (!players.length) return ui.notifications.info(L("netArch.audience.noPlayers"));
+  const current = new Set(audienceOf(data));
+  const rows = players.map((u) => `<label class="er2070-na-aud"><input type="checkbox" name="user" value="${u.id}" ${current.has(u.id) ? "checked" : ""}> ${esc(u.name)}${u.active ? "" : ` <span class="er2070-na-hint">(${L("netArch.audience.offline")})</span>`}</label>`).join("");
+  const users = await Dialog.prompt({
+    title: L("netArch.audience.title", { name: data.name }),
+    content: `<p>${L("netArch.audience.hint")}</p><div class="er2070-na-aud-list">${rows}</div>`,
+    label: L("netArch.audience.show"),
+    callback: (html) => [...(html[0] ?? html).querySelectorAll('input[name="user"]:checked')].map((i) => i.value),
+    rejectClose: false,
+    options: { classes: ["dialog", "er2070-netarch", "er2070-na-aud-dialog"] },
+  });
+  if (!users) return;
+  return gmExec("netArchAudience", { uuid, users });
+}
 
-// Un jugador que entra tarde (o cuyo DJ acaba de entrar) pide el estado actual.
+registerHandler("netArchAudience", async ({ uuid, users }, userId) => {
+  const user = game.users.get(userId);
+  if (!user?.isGM || typeof uuid !== "string" || !Array.isArray(users)) return denied(user, "netArchAudience");
+  return serialize(`netarch:${uuid}`, async () => {
+    if (game.user !== game.users.activeGM || !game.users.get(userId)?.isGM) return denied(user, "netArchAudience");
+    const page = await fromUuid(uuid);
+    if (page?.documentName !== "JournalEntryPage" || page.pack) return denied(user, "netArchAudience");
+    const data = pageData(page);
+    if (!validateNetArchitecture(data).ok) return ui.notifications.error(L("netArch.invalid"));
+    const { next, removed } = audienceChange(data, users, game.users.filter((u) => !u.isGM).map((u) => u.id));
+    await page.update({ [`flags.${MODULE_ID}.${FLAG}.audience`]: next });
+    if (removed.length) broadcast(page, { to: removed, close: true });
+    if (next.length) broadcast(page, { to: next, open: true });
+  });
+});
+
+/** Páginas del mundo con algún piso revelado o con público. */
+const activePages = () => game.journal.contents.flatMap((j) => j.pages.contents).filter((p) => revealedCount(pageData(p)) > 0 || audienceOf(pageData(p)).length);
+
+// Un jugador que entra tarde (o cuyo DJ acaba de entrar) pide el estado: lo recibe sin que se abra nada, y solo de
+// las arquitecturas en cuyo público está. La vuelve a abrir con la herramienta o el DJ con «Mostrar a jugadores».
 registerHandler("netArchSync", (data, userId) => {
-  for (const page of activePages()) broadcast(page, { open: true, to: [userId] });
+  for (const page of activePages()) if (audienceOf(pageData(page)).includes(userId)) broadcast(page, { to: [userId] });
 });
 
 /** Mensajes del DJ a los jugadores. Solo se aceptan si los envía un DJ. */
@@ -287,7 +345,8 @@ function receive(message, userId) {
   if (game.user.isGM) return windows.get(s.uuid)?.render(false); // otro DJ ha pulsado: refrescar
   if (Array.isArray(s.to) && !s.to.includes(game.user.id)) return;
   const w = windows.get(s.uuid);
-  if (!(s.revealed > 0)) {
+  // Se cierra si deja de estar en el público o si el DJ reinicia (salvo que la muestre expresamente sin pisos).
+  if (s.close || (!(s.revealed > 0) && !s.open)) {
     playerStates.delete(s.uuid);
     return w?.close();
   }

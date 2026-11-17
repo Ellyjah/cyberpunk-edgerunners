@@ -14,12 +14,15 @@ function fixture(uuid, { pack = null } = {}) {
   const primary = { id: "gm1", isGM: true }, secondary = { id: "gm2", isGM: true }, player = { id: "player", isGM: false };
   const users = new Map([[primary.id, primary], [secondary.id, secondary], [player.id, player]]);
   users.activeGM = primary;
-  const data = { schemaVersion: 1, name: "Red de prueba", floors: Array.from({ length: 4 }, (_, i) => ({ type: "password", name: `Piso ${i}`, dv: 6 })), revealed: 0 };
+  const player2 = { id: "player2", isGM: false }; users.set(player2.id, player2);
+  users.filter = (fn) => [...users.values()].filter(fn);
+  const data = { schemaVersion: 1, name: "Red de prueba", floors: Array.from({ length: 4 }, (_, i) => ({ type: "password", name: `Piso ${i}`, dv: 6 })), revealed: 0, audience: ["player"] };
   const writes = [], packets = [], warnings = [];
   const page = {
     uuid, documentName: "JournalEntryPage", pack, flags: { "edgerunners-2070": { netArchitecture: data } },
     async update(change) {
       await delay();
+      if ("flags.edgerunners-2070.netArchitecture.audience" in change) { data.audience = change["flags.edgerunners-2070.netArchitecture.audience"]; return; }
       const value = change["flags.edgerunners-2070.netArchitecture.revealed"];
       writes.push(value); data.revealed = value;
     },
@@ -35,7 +38,8 @@ function fixture(uuid, { pack = null } = {}) {
   // El método que causaba el error no debe invocarse, ni siquiera para obtener el título.
   globalThis.fromUuidSync = () => { throw new Error("No se admite resolver una página de compendio síncronamente"); };
   listenSocket();
-  return { data, page, writes, packets, warnings, send: (op, sender = "gm1") => listener({ name: "netArchCommand", data: { uuid, op } }, sender) };
+  return { data, page, writes, packets, warnings, send: (op, sender = "gm1") => listener({ name: "netArchCommand", data: { uuid, op } }, sender),
+    audience: (list, sender = "gm1") => listener({ name: "netArchAudience", data: { uuid, users: list } }, sender) };
 }
 
 test("A070-02: dos DJ simultáneos conservan sus dos avances", async () => {
@@ -65,9 +69,33 @@ test("A070-03: página de compendio abre con título asíncrono y permanece de c
   const w = await openNetArchitecture(f.page.uuid);
   assert.match(w.renderedTitle, /Red de prueba/);
   const html = await w.buildHtml();
-  assert.equal((html.match(/ disabled/g) ?? []).length, 3);
+  assert.equal((html.match(/ disabled/g) ?? []).length, 4); // 0.9.0: también «Mostrar a jugadores»
   await gmExec("netArchCommand", { uuid: f.page.uuid, op: "reveal" });
   assert.equal(f.data.revealed, 0); assert.deepEqual(f.writes, []);
   f.data.name = "Nombre actualizado";
   assert.match((await openNetArchitecture(f.page.uuid)).renderedTitle, /Nombre actualizado/);
+});
+
+test("0.9.0: revelar no abre la ventana y solo envía la vista al público", async () => {
+  const f = fixture("JournalEntry.test.JournalEntryPage.audience-reveal");
+  await f.send("reveal");
+  assert.equal(f.packets.length, 1);
+  assert.deepEqual(f.packets[0].netArch.to, ["player"]);
+  assert.equal(f.packets[0].netArch.open, false);
+  assert.equal(f.packets[0].netArch.floors.length, 1);
+  f.data.audience = [];
+  await f.send("reveal");
+  assert.equal(f.packets.length, 1); // sin público no sale nada
+});
+
+test("0.9.0: «Mostrar a jugadores» abre a los elegidos, cierra a los quitados y descarta ids ajenos", async () => {
+  const f = fixture("JournalEntry.test.JournalEntryPage.audience-show"); f.data.revealed = 2;
+  await f.audience(["player2", "gm2", "fantasma", "player2"]);
+  assert.deepEqual(f.data.audience, ["player2"]);
+  const [closed, opened] = f.packets.map((p) => p.netArch);
+  assert.deepEqual([closed.to, closed.close, closed.floors.length], [["player"], true, 0]);
+  assert.deepEqual([opened.to, opened.open, opened.floors.length], [["player2"], true, 2]);
+  await f.audience(["player"], "player");
+  assert.deepEqual(f.data.audience, ["player2"]); // un jugador no puede cambiarlo
+  assert.equal(f.warnings.length, 1);
 });

@@ -70,3 +70,13 @@ button.er2070-na-launch:hover { background: #1f2a12; box-shadow: none; }
 .er2070-na-hint { color: var(--na-muted); font-size: 0.85em; font-style: italic; }
 button.er2070-na-ed-add { width: 100%; margin: 0 0 0.5rem; background: #000000; color: var(--na-text); border: 1px dashed #70b931; border-radius: 2px; font-family: inherit; }
 .er2070-na-ed-errors { margin: 0 0 0.5rem; padding-left: 1.2rem; color: var(--na-blackIce); }
+/* Público de la arquitectura (0.9.0): línea con quién la ve y botón «Mostrar a jugadores»; diálogo de selección. */
+.er2070-na-share { display: flex; gap: 0.5rem; align-items: center; margin: 0 0 0.5rem; color: var(--na-muted); font-size: 0.95em; }
+.er2070-na-share span { flex: 1; }
+.er2070-na-share button { flex: 0 0 auto; width: auto; background: #000000; color: var(--na-yellow); border: 1px solid #70b931; border-radius: 2px; font-family: inherit; }
+.er2070-na-share button:hover:not(:disabled) { background: #1f2a12; box-shadow: none; }
+.er2070-na-share button:disabled { opacity: 0.4; }
+.er2070-na-aud-dialog .window-content { color: var(--na-text); }
+.er2070-na-aud-list { display: flex; flex-direction: column; gap: 0.25rem; margin: 0.4rem 0 0.6rem; }
+.er2070-na-aud { display: flex; gap: 0.4rem; align-items: center; }
+.er2070-na-aud-dialog .dialog-buttons button { background: #000000; color: var(--na-text); border: 1px solid #70b931; border-radius: 2px; }

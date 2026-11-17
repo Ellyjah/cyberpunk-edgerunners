@@ -534,7 +534,8 @@
         "dv": "DV must be a positive integer",
         "notes": "notes must be text",
         "uuid": "invalid UUID",
-        "revealed": "must be an integer between 0 and {max}"
+        "revealed": "must be an integer between 0 and {max}",
+        "audience": "must be a list of users"
       },
       "editor": {
         "menu": "Create or edit NET architecture",
@@ -568,6 +569,16 @@
         "tableLevel": "Level",
         "tableContent": "Content",
         "tableDv": "DV"
+      },
+      "audience": {
+        "button": "Show to players…",
+        "title": "Show “{name}” to…",
+        "show": "Show",
+        "hint": "Tick the players who will see this architecture. Ticked players get the window with the revealed floors; unticked players have it closed. Press again to reopen it for anyone who closed it.",
+        "offline": "offline",
+        "noPlayers": "There are no players in this world.",
+        "visibleTo": "Visible to: {names}",
+        "nobody": "No player can see it."
       }
     },
     "tools": {

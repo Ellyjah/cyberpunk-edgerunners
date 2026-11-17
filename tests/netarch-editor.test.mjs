@@ -76,3 +76,13 @@ test("Tabla de la página: nivel, nombre escapado y VD (— sin VD)", () => {
   assert.equal(html, '<table class="er2070-na-table"><thead><tr><th>Nivel</th><th>Contenido</th><th>VD</th></tr></thead><tbody>'
     + "<tr><td>1</td><td>A&lt;b&gt;</td><td>6</td></tr><tr><td>2</td><td>Hielo &amp; co</td><td>—</td></tr></tbody></table>");
 });
+
+test("0.9.0: público de la arquitectura: validación, lista sin repetidos y cambio", async () => {
+  const { audienceOf, audienceChange } = await import("../scripts/netarch.js");
+  const base = { name: "R", floors: [{ type: "file", name: "A" }] };
+  assert.equal(validateNetArchitecture({ ...base, audience: ["u1"] }).ok, true);
+  assert.deepEqual(validateNetArchitecture({ ...base, audience: "u1" }).errors.map((e) => e.code), ["audience"]);
+  assert.deepEqual(audienceOf({ audience: ["a", "a", "b"] }), ["a", "b"]);
+  assert.deepEqual(audienceOf({}), []);
+  assert.deepEqual(audienceChange({ audience: ["a", "b"] }, ["b", "c", "x", "c"], ["a", "b", "c"]), { next: ["b", "c"], removed: ["a"] });
+});

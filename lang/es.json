@@ -549,7 +549,8 @@
         "dv": "la VD debe ser un entero positivo",
         "notes": "las notas deben ser texto",
         "uuid": "UUID no válido",
-        "revealed": "debe ser un entero entre 0 y {max}"
+        "revealed": "debe ser un entero entre 0 y {max}",
+        "audience": "debe ser una lista de usuarios"
       },
       "editor": {
         "menu": "Crear o editar arquitectura de Red",
@@ -583,6 +584,16 @@
         "tableLevel": "Nivel",
         "tableContent": "Contenido",
         "tableDv": "VD"
+      },
+      "audience": {
+        "button": "Mostrar a jugadores…",
+        "title": "Mostrar «{name}» a…",
+        "show": "Mostrar",
+        "hint": "Marca los jugadores que verán esta arquitectura. A los marcados se les abre la ventana con los pisos revelados; a los desmarcados se les cierra. Vuelve a pulsar para reabrírsela a quien la haya cerrado.",
+        "offline": "desconectado",
+        "noPlayers": "No hay jugadores en el mundo.",
+        "visibleTo": "La ven: {names}",
+        "nobody": "Ningún jugador la ve."
       }
     },
     "tools": {
