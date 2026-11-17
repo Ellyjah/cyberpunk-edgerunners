@@ -23,6 +23,7 @@ function fixture(uuid, { pack = null } = {}) {
     async update(change) {
       await delay();
       if ("flags.edgerunners-2070.netArchitecture.audience" in change) { data.audience = change["flags.edgerunners-2070.netArchitecture.audience"]; return; }
+      if ("flags.edgerunners-2070.netArchitecture" in change) { const next = change["flags.edgerunners-2070.netArchitecture"]; for (const k of Object.keys(data)) if (!(k in next)) delete data[k]; Object.assign(data, next); writes.push("save"); return; }
       const value = change["flags.edgerunners-2070.netArchitecture.revealed"];
       writes.push(value); data.revealed = value;
     },
@@ -39,7 +40,8 @@ function fixture(uuid, { pack = null } = {}) {
   globalThis.fromUuidSync = () => { throw new Error("No se admite resolver una página de compendio síncronamente"); };
   listenSocket();
   return { data, page, writes, packets, warnings, send: (op, sender = "gm1") => listener({ name: "netArchCommand", data: { uuid, op } }, sender),
-    audience: (list, sender = "gm1") => listener({ name: "netArchAudience", data: { uuid, users: list } }, sender) };
+    audience: (list, sender = "gm1") => listener({ name: "netArchAudience", data: { uuid, users: list } }, sender),
+    save: (draft, sender = "gm1") => listener({ name: "netArchSave", data: { uuid, data: draft, table: null } }, sender) };
 }
 
 test("A070-02: dos DJ simultáneos conservan sus dos avances", async () => {
@@ -97,5 +99,32 @@ test("0.9.0: «Mostrar a jugadores» abre a los elegidos, cierra a los quitados 
   assert.deepEqual([opened.to, opened.open, opened.floors.length], [["player2"], true, 2]);
   await f.audience(["player"], "player");
   assert.deepEqual(f.data.audience, ["player2"]); // un jugador no puede cambiarlo
+  assert.equal(f.warnings.length, 1);
+});
+
+const editorDraft = (n, name = "Editada") => ({ name, floors: Array.from({ length: n }, (_, i) => ({ type: "file", name: `Nuevo ${i}`, dv: 8 })) });
+
+test("0.9.1 (H05): revelar y guardar el editor a la vez conserva la revelación", async () => {
+  const f = fixture("JournalEntry.test.JournalEntryPage.save-reveal");
+  await Promise.all([f.send("reveal", "gm1"), f.save(editorDraft(4), "gm2")]);
+  assert.equal(f.data.revealed, 1);
+  assert.equal(f.data.name, "Editada");
+  assert.equal(f.data.floors[0].name, "Nuevo 0");
+});
+
+test("0.9.1 (P02): cambiar el público y guardar el editor a la vez conserva el público nuevo", async () => {
+  const f = fixture("JournalEntry.test.JournalEntryPage.save-audience");
+  await Promise.all([f.audience(["player2"], "gm1"), f.save(editorDraft(4), "gm2")]);
+  assert.deepEqual(f.data.audience, ["player2"]);
+  assert.equal(f.data.floors.length, 4);
+});
+
+test("0.9.1: guardar con menos pisos ajusta los revelados; un guardado de jugador se rechaza", async () => {
+  const f = fixture("JournalEntry.test.JournalEntryPage.save-clamp"); f.data.revealed = 3;
+  await f.save(editorDraft(2));
+  assert.equal(f.data.revealed, 2);
+  assert.equal(f.data.schemaVersion, 1);
+  await f.save(editorDraft(1, "Jugador"), "player");
+  assert.equal(f.data.name, "Editada");
   assert.equal(f.warnings.length, 1);
 });

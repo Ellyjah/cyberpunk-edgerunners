@@ -368,16 +368,64 @@ export async function openNetArchitecture(pageOrUuid) {
   return show(uuid);
 }
 
-/** Guarda la arquitectura del editor (0.8.0) en una página del mundo y, si se pide, su texto. Los jugadores reciben
- *  la vista nueva (o se les cierra si ya no hay pisos revelados). Devuelve el resultado de la validación. */
-export async function saveNetArchitecture(page, data, { content } = {}) {
+const LAUNCH_SLOT = "[data-er2070-net], .av2070-net-launch";
+const TABLES = "table.er2070-na-table, table.av2070-net-table";
+
+/** Pone la tabla en el HTML de la página: sustituye la que haya (conservando su clase, p. ej., la de Aventuras 2070)
+ *  o la añade tras el sitio del botón, que se crea al final si no existe. Solo en Foundry (usa DOMParser). */
+export function placeTable(html, table) {
+  const parse = (s) => new DOMParser().parseFromString(`<body>${s}</body>`, "text/html").body;
+  const body = parse(html), fresh = parse(table).firstElementChild;
+  const old = body.querySelector(TABLES);
+  if (old) {
+    fresh.className = old.className;
+    old.replaceWith(fresh);
+  } else {
+    let slot = body.querySelector(LAUNCH_SLOT);
+    if (!slot) {
+      slot = document.createElement("p");
+      slot.setAttribute("data-er2070-net", "");
+      (body.querySelector("article") ?? body).append(slot);
+    }
+    slot.after(fresh);
+  }
+  return body.innerHTML;
+}
+
+/** Guarda la arquitectura del editor (0.8.0) en una página del mundo y, si se pide, la tabla en su texto. Los jugadores
+ *  reciben la vista nueva (o se les cierra si ya no hay pisos revelados). Devuelve el resultado de la validación.
+ *  0.9.1 (H05, P02): lo escribe el DJ activo en la cola de la página, como revelar y mostrar; los pisos revelados y el
+ *  público se leen dentro de la cola, así que una revelación o un cambio de público simultáneos no se pierden. */
+export async function saveNetArchitecture(page, data, { table } = {}) {
   if (!game.user.isGM || page?.documentName !== "JournalEntryPage" || page.pack) throw Error(L("netArch.editor.inCompendium"));
   const check = validateNetArchitecture(data);
   if (!check.ok) return check;
-  await page.update({ [`flags.${MODULE_ID}.${FLAG}`]: data, ...(content !== undefined ? { "text.content": content } : {}) });
-  broadcast(page);
+  await gmExec("netArchSave", { uuid: page.uuid, data: { name: data.name, floors: data.floors }, table: typeof table === "string" ? table : null });
   return check;
 }
+
+/** Datos que se guardan: los del editor con los pisos revelados (acotados) y el público actuales de la página. */
+export function mergeSave(current, data) {
+  const next = { schemaVersion: NET_ARCH_VERSION, name: data?.name, floors: data?.floors, revealed: Math.min(revealedCount(current), Array.isArray(data?.floors) ? data.floors.length : 0) };
+  if (current?.audience !== undefined) next.audience = audienceOf(current);
+  return next;
+}
+
+registerHandler("netArchSave", async ({ uuid, data, table }, userId) => {
+  const user = game.users.get(userId);
+  if (!user?.isGM || typeof uuid !== "string" || !data || typeof data !== "object") return denied(user, "netArchSave");
+  return serialize(`netarch:${uuid}`, async () => {
+    if (game.user !== game.users.activeGM || !game.users.get(userId)?.isGM) return denied(user, "netArchSave");
+    const page = await fromUuid(uuid);
+    if (page?.documentName !== "JournalEntryPage" || page.pack) return denied(user, "netArchSave");
+    const next = mergeSave(pageData(page), data);
+    if (!validateNetArchitecture(next).ok) return ui.notifications.error(L("netArch.invalid"));
+    const update = { [`flags.${MODULE_ID}.${FLAG}`]: next };
+    if (typeof table === "string" && page.type === "text") update["text.content"] = placeTable(page.text?.content ?? "", table);
+    await page.update(update);
+    broadcast(page);
+  });
+});
 
 // ---------------------------------------------------------------- registro
 

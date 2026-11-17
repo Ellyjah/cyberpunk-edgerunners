@@ -27,8 +27,9 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.9.0 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070, dispositivos y arquitecturas de Red)
+## Estado actual: 0.9.1 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070, dispositivos y arquitecturas de Red)
 
+- **0.9.1:** H05 y P02 (auditoría global de Codex). `saveNetArchitecture` envía la orden de DJ `netArchSave` (serializada por página, solo el DJ activo). Dentro de la cola, `mergeSave` toma los pisos revelados (acotados) y el público actuales, y `placeTable` (ahora en `netarch.js`) coloca la tabla sobre el texto actual. Tests: 3 de regresión nuevos (84).
 - **0.9.0:** público de las arquitecturas de Red. Campo opcional `audience` (ids de usuario) en la bandera `netArchitecture` (NET-ARCH-1, ampliación compatible; nota en CONTRATOS).
   - El socket solo envía la vista a ese público: `broadcast` usa `to = audience` y no sale nada si está vacío.
   - Revelar, ocultar y reiniciar no abren ninguna ventana.

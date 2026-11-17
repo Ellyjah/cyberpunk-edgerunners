@@ -10,33 +10,10 @@ import { L, esc } from "./effects.js";
 import { FLOOR_TYPES, validateNetArchitecture, editFloors, normalizeArchitecture, iceLabel, architectureTable, saveNetArchitecture, revealedCount } from "./netarch.js";
 
 const FLAG = "netArchitecture";
-const LAUNCH = "[data-er2070-net], .av2070-net-launch";
-const TABLES = "table.er2070-na-table, table.av2070-net-table";
 const typeName = (t) => L(`netArch.type.${t}`);
 // Un nombre se puede reescribir solo si está vacío, es el del tipo o lo puso el propio editor (hielos, dispositivo).
 const isDefaultName = (f) => !String(f.name ?? "").trim() || FLOOR_TYPES.some((t) => f.name === typeName(t)) || (f._auto && f.name === f._auto);
 const isBlackIce = (d) => d?.documentName === "Item" && d.type === "program" && d.system?.class === "blackice";
-
-/** Pone la tabla en el HTML de la página: sustituye la que haya (conservando su clase, p. ej., la de Aventuras 2070)
- *  o la añade tras el sitio del botón, que se crea al final si no existe. */
-function placeTable(html, table) {
-  const parse = (s) => new DOMParser().parseFromString(`<body>${s}</body>`, "text/html").body;
-  const body = parse(html), fresh = parse(table).firstElementChild;
-  const old = body.querySelector(TABLES);
-  if (old) {
-    fresh.className = old.className;
-    old.replaceWith(fresh);
-  } else {
-    let slot = body.querySelector(LAUNCH);
-    if (!slot) {
-      slot = document.createElement("p");
-      slot.setAttribute("data-er2070-net", "");
-      (body.querySelector("article") ?? body).append(slot);
-    }
-    slot.after(fresh);
-  }
-  return body.innerHTML;
-}
 
 const tableLabels = () => ({ level: L("netArch.editor.tableLevel"), content: L("netArch.editor.tableContent"), dv: L("netArch.editor.tableDv") });
 const editors = new Map(); // uuid de la página (o «new») → editor abierto
@@ -190,9 +167,8 @@ class NetArchEditor extends (typeof Application === "undefined" ? Object : Appli
   async save() {
     this.sync();
     const current = this.page ? await fromUuid(this.page.uuid) : null;
+    // 0.9.1: los pisos revelados y el público los pone el DJ activo al guardar, en la cola de la página.
     const data = normalizeArchitecture(this.draft, revealedCount(current?.flags?.[MODULE_ID]?.[FLAG]));
-    const audience = current?.flags?.[MODULE_ID]?.[FLAG]?.audience;
-    if (Array.isArray(audience)) data.audience = audience; // el público lo elige el DJ en la ventana, no aquí
     const check = validateNetArchitecture(data);
     if (!check.ok) {
       const where = (path) => {
@@ -211,7 +187,7 @@ class NetArchEditor extends (typeof Application === "undefined" ? Object : Appli
         entry?.sheet.render(true);
       } else {
         const write = this.writeTable && current.type === "text";
-        await saveNetArchitecture(current, data, write ? { content: placeTable(current.text?.content ?? "", table) } : {});
+        await saveNetArchitecture(current, data, write ? { table } : {});
       }
       ui.notifications.info(L("netArch.editor.saved", { name: data.name }));
       this.close();

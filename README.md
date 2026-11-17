@@ -52,6 +52,10 @@ Las herramientas del motor se abren desde el menú **«2070 ▾»** de la cabece
 - **Modo seguro de tiradas:** interruptor del DJ que devuelve todas las tiradas al sistema base al momento.
 - Las acciones que afectan a otros actores las valida y ejecuta el cliente del DJ.
 
+## Cambios de la versión 0.9.1
+
+- Corrección H05 y P02 de la auditoría global de Codex: guardar el editor de una arquitectura ya no puede deshacer una revelación de piso ni un cambio de público hechos a la vez. El guardado lo hace el DJ activo en la misma cola que «Revelar» y «Mostrar a jugadores», y usa los valores más recientes.
+
 ## Cambios de la versión 0.9.0
 
 - **Arquitecturas de Red: el DJ elige qué jugadores las ven.**
