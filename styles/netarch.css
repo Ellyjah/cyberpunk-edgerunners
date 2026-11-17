@@ -38,7 +38,10 @@
 .er2070-na-circuit { display: block; width: 100%; max-width: 240px; height: auto; }
 .er2070-na-notes,
 .er2070-na-links { margin: 0.25rem 0 0; color: var(--na-muted); font-size: 0.9em; }
-.er2070-na-links .content-link { background: #000000; color: var(--na-text); border-color: var(--na-color); }
+/* RED pinta el fondo de los enlaces con su variable y !important (0.7.1): se redefine la variable aquí. */
+.er2070-na-links { --cpr-background-content-link: #000000; }
+.er2070-netarch .er2070-na-links a.content-link { background: #000000; color: var(--na-text); border: 1px solid var(--na-color); }
+.er2070-netarch .er2070-na-links a.content-link i { color: var(--na-color); }
 /* Botón en la página de journal (solo DJ). */
 button.er2070-na-launch { width: auto; margin: 0.3rem 0; padding: 0.1rem 0.8rem; background: #000000; color: #f4e300; border: 1px solid #70b931; border-radius: 2px; font-family: "ER2070 Rajdhani", "Jost", sans-serif; font-weight: 600; }
 button.er2070-na-launch:hover { background: #1f2a12; box-shadow: none; }

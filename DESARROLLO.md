@@ -27,8 +27,9 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.7.0 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070, dispositivos y arquitecturas de Red)
+## Estado actual: 0.7.1 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070, dispositivos y arquitecturas de Red)
 
+- **0.7.1:** en la ventana «Arquitectura de Red», los enlaces de cada piso al hielo negro y al dispositivo se leen: RED pinta el fondo de los enlaces de gris claro con `!important` y el texto quedaba blanco sobre gris. Ahora van en negro, con el borde y el icono del color del piso. Solo cambia `styles/netarch.css`.
 - **0.7.0:** ventana **Arquitectura de Red** (`scripts/netarch.js`, `styles/netarch.css`; contrato NET-ARCH-1 de `CONTRATOS.md`). El motor no trae arquitecturas: los datos van en la bandera `netArchitecture` de una página de journal.
   - **DJ:** botón «Abrir arquitectura de Red» en la página (en `[data-er2070-net]` o `.av2070-net-launch`; si no hay marca, arriba). Ventana con todos los pisos, sus notas y enlaces al hielo negro y al dispositivo, y los botones «Revelar siguiente», «Ocultar último» y «Reiniciar». El número de pisos revelados se guarda en la página (solo en páginas del mundo, no de compendio).
   - **Jugadores:** la ventana se abre sola en todas las pantallas al revelar un piso y se actualiza al ocultar o reiniciar. En el socket del motor reciben nombre, tipo y VD de los pisos revelados, solo de un DJ; no necesitan permiso sobre la página. Esto filtra la vista del módulo, no impide inspeccionar la bandera completa enviada por Foundry con el documento. Quien entra a mitad de escena recibe el estado al conectarse. La herramienta «Arquitectura de Red» de los controles de token vuelve a abrir lo revelado.
