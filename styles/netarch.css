@@ -45,3 +45,28 @@
 /* Botón en la página de journal (solo DJ). */
 button.er2070-na-launch { width: auto; margin: 0.3rem 0; padding: 0.1rem 0.8rem; background: #000000; color: #f4e300; border: 1px solid #70b931; border-radius: 2px; font-family: "ER2070 Rajdhani", "Jost", sans-serif; font-weight: 600; }
 button.er2070-na-launch:hover { background: #1f2a12; box-shadow: none; }
+/* Editor de arquitecturas (0.8.0, solo DJ): mismos colores por tipo de piso; campos oscuros propios. */
+.er2070-na-ed-name, .er2070-na-ed-table { display: flex; gap: 0.4rem; align-items: center; color: var(--na-text); margin: 0 0 0.5rem; }
+.er2070-na-ed-name input { flex: 1; }
+.er2070-na-ed input[type="text"], .er2070-na-ed input[type="number"], .er2070-na-ed select, .er2070-na-ed textarea { background: #000000; color: var(--na-text); border: 1px solid #3a4044; border-radius: 2px; font-family: inherit; }
+.er2070-na-ed select option { background: #000000; color: var(--na-text); }
+.er2070-na-ed-floors { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.er2070-na-ed-floor { --na-color: var(--na-password); background: var(--na-card); border-left: 4px solid var(--na-color); padding: 0.35rem 0.5rem; }
+.er2070-na-ed-floor.er2070-na-blackIce { --na-color: var(--na-blackIce); }
+.er2070-na-ed-floor.er2070-na-controlNode { --na-color: var(--na-controlNode); }
+.er2070-na-ed-floor.er2070-na-file { --na-color: var(--na-file); }
+.er2070-na-ed-floor.dragover { box-shadow: 0 0 0 1px var(--na-color), 0 0 10px -2px var(--na-color); }
+.er2070-na-ed-row { display: flex; gap: 0.3rem; align-items: center; }
+.er2070-na-ed-row .er2070-na-num { color: var(--na-color); }
+.er2070-na-ed-row select { flex: 0 0 9rem; }
+.er2070-na-ed-row input[name="name"] { flex: 1; min-width: 6rem; }
+.er2070-na-ed-row input[name="dv"] { flex: 0 0 4rem; }
+.er2070-na-ed-tools { display: flex; gap: 0.35rem; }
+.er2070-na-ed-tools a, .er2070-na-chip a { color: var(--na-muted); }
+.er2070-na-ed-tools a:hover, .er2070-na-chip a:hover { color: var(--na-yellow); text-shadow: none; }
+.er2070-na-ed textarea { display: block; width: 100%; margin-top: 0.3rem; min-height: 1.9em; resize: vertical; }
+.er2070-na-ed-links { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin-top: 0.3rem; }
+.er2070-na-chip { display: inline-flex; gap: 0.3rem; align-items: center; background: #000000; color: var(--na-text); border: 1px solid var(--na-color); border-radius: 2px; padding: 0 0.35rem; }
+.er2070-na-hint { color: var(--na-muted); font-size: 0.85em; font-style: italic; }
+button.er2070-na-ed-add { width: 100%; margin: 0 0 0.5rem; background: #000000; color: var(--na-text); border: 1px dashed #70b931; border-radius: 2px; font-family: inherit; }
+.er2070-na-ed-errors { margin: 0 0 0.5rem; padding-left: 1.2rem; color: var(--na-blackIce); }

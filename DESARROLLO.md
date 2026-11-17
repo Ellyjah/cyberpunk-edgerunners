@@ -27,8 +27,14 @@ Al habilitarlo sobre RED – Core en un **World vacío**, debe aparecer su confi
 
 La fuente autorizada para las reglas está documentada en `../03-coordinacion/REGLAS.md`; los contratos técnicos en `../03-coordinacion/CONTRATOS.md`. Inspeccionar API y código real antes de escribir implementaciones concretas.
 
-## Estado actual: 0.7.1 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070, dispositivos y arquitecturas de Red)
+## Estado actual: 0.8.0 (M3–M6, auditorías de Codex, estilo de hoja 2070, veredicto, modo seguro de tiradas, modificadores 2070, dispositivos y arquitecturas de Red)
 
+- **0.8.0:** editor de arquitecturas de Red (`scripts/netarch-editor.js`; lógica pura `editFloors`, `normalizeArchitecture`, `iceLabel` y `architectureTable` en `netarch.js`, con tests en `tests/netarch-editor.test.mjs`). No cambia NET-ARCH-1.
+  - **Entradas, solo para el DJ:** el gancho `getJournalSheetEntryContext` (menú de la página), el botón «Editar» de la ventana (gancho `renderNetArchWindow`, no en compendios) y la herramienta `er2070-netarch-new` de los controles de token, que crea un journal «Arquitectura de Red · <nombre>».
+  - **Arrastrar y soltar:** en un piso de hielo negro se aceptan solo `program` con `class: blackice`; en un nodo de control, un actor. Normalizar deja los hielos solo en pisos de hielo negro y el dispositivo solo en nodos de control.
+  - **Guardado:** `saveNetArchitecture(page, data, { content })` valida, escribe la bandera (y el texto, si se pide) y envía la vista a los jugadores. `revealed` se conserva, acotado al número de pisos.
+  - **Tabla de la página:** sustituye `table.er2070-na-table` o `table.av2070-net-table` conservando su clase; si no hay, la añade tras el sitio del botón (`[data-er2070-net]` o `.av2070-net-launch`), que se crea al final si falta.
+  - **API:** `openNetArchEditor(pageOrUuid | null)`.
 - **0.7.1:** en la ventana «Arquitectura de Red», los enlaces de cada piso al hielo negro y al dispositivo se leen: RED pinta el fondo de los enlaces de gris claro con `!important` y el texto quedaba blanco sobre gris. Ahora van en negro, con el borde y el icono del color del piso. Solo cambia `styles/netarch.css`.
 - **0.7.0:** ventana **Arquitectura de Red** (`scripts/netarch.js`, `styles/netarch.css`; contrato NET-ARCH-1 de `CONTRATOS.md`). El motor no trae arquitecturas: los datos van en la bandera `netArchitecture` de una página de journal.
   - **DJ:** botón «Abrir arquitectura de Red» en la página (en `[data-er2070-net]` o `.av2070-net-launch`; si no hay marca, arriba). Ventana con todos los pisos, sus notas y enlaces al hielo negro y al dispositivo, y los botones «Revelar siguiente», «Ocultar último» y «Reiniciar». El número de pisos revelados se guarda en la página (solo en páginas del mundo, no de compendio).

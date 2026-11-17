@@ -6,6 +6,7 @@ import { registerLifeHooks } from "./life.js";
 import { registerVerdictHooks } from "./verdict.js";
 import { registerHeaderMenuHooks } from "./header-menu.js";
 import { registerNetArchHooks, startNetArch, openNetArchitecture, validateNetArchitecture } from "./netarch.js";
+import { registerNetArchEditorHooks, openNetArchEditor } from "./netarch-editor.js";
 
 const RED_ID = "cyberpunk-red-core";
 const TAB = "edgerunners-2070";
@@ -85,7 +86,7 @@ Hooks.once("init", () => {
     requiresReload: false,
     onChange: applyTheme,
   });
-  game.modules.get(MODULE_ID).api = { schemaVersion: SCHEMA_VERSION, validate, migrate, getCapabilities, suspendAllCarriers, restoreSuspendedCarriers, openNetArchitecture, validateNetArchitecture };
+  game.modules.get(MODULE_ID).api = { schemaVersion: SCHEMA_VERSION, validate, migrate, getCapabilities, suspendAllCarriers, restoreSuspendedCarriers, openNetArchitecture, validateNetArchitecture, openNetArchEditor };
 });
 
 /**
@@ -115,6 +116,7 @@ Hooks.once("setup", () => {
   registerVerdictHooks();
   registerHeaderMenuHooks();
   registerNetArchHooks();
+  registerNetArchEditorHooks();
 });
 Hooks.once("ready", () => {
   if (game.system.id !== RED_ID) return;

@@ -64,6 +64,53 @@ export function playerView(data) {
   return { name: String(data?.name ?? ""), floors, total: data?.floors?.length ?? 0 };
 }
 
+// ---------------------------------------------------------------- editor (0.8.0), lógica pura
+
+/** Operaciones del editor sobre la lista de pisos: add (tras `i` o al final, con `floor`), up, down, duplicate, remove. */
+export function editFloors(floors, op, i, floor) {
+  const list = floors.map((f) => structuredClone(f));
+  const n = list.length;
+  if (op === "add") list.splice(Number.isInteger(i) && i >= 0 && i < n ? i + 1 : n, 0, { ...floor });
+  else if (!Number.isInteger(i) || i < 0 || i >= n) return list;
+  else if (op === "up" && i > 0) [list[i - 1], list[i]] = [list[i], list[i - 1]];
+  else if (op === "down" && i < n - 1) [list[i], list[i + 1]] = [list[i + 1], list[i]];
+  else if (op === "duplicate") list.splice(i + 1, 0, structuredClone(list[i]));
+  else if (op === "remove") list.splice(i, 1);
+  return list;
+}
+
+/** Borrador del editor → datos del contrato NET-ARCH-1. Los hielos solo en pisos de hielo negro y el dispositivo solo
+ *  en nodos de control; campos vacíos fuera; `revealed` se conserva acotado al nuevo número de pisos. */
+export function normalizeArchitecture(draft, revealed = 0) {
+  const floors = (draft?.floors ?? []).map((f) => {
+    const g = { type: f.type, name: String(f.name ?? "").trim() };
+    const dv = typeof f.dv === "string" ? f.dv.trim() : f.dv;
+    if (dv !== "" && dv !== undefined && dv !== null) g.dv = Number(dv);
+    const notes = String(f.notes ?? "").trim();
+    if (notes) g.notes = notes;
+    if (f.type === "blackIce" && f.iceUuids?.length) g.iceUuids = [...f.iceUuids];
+    if (f.type === "controlNode" && f.deviceUuid) g.deviceUuid = f.deviceUuid;
+    return g;
+  });
+  const r = Number.isInteger(revealed) ? Math.max(0, Math.min(revealed, floors.length)) : 0;
+  return { schemaVersion: NET_ARCH_VERSION, name: String(draft?.name ?? "").trim(), floors, revealed: r };
+}
+
+/** Nombre de un piso de hielo negro a partir de sus hielos: «Cuervo ×2», «Liche + Cerbero». */
+export function iceLabel(names) {
+  const counts = new Map();
+  for (const n of names) counts.set(n, (counts.get(n) ?? 0) + 1);
+  return [...counts].map(([n, c]) => (c > 1 ? `${n} ×${c}` : n)).join(" + ");
+}
+
+const escHtml = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+/** Tabla de consulta de la página: nivel, contenido (nombre del piso) y VD. `labels`: { level, content, dv }. */
+export function architectureTable(data, labels) {
+  const rows = data.floors.map((f, i) => `<tr><td>${i + 1}</td><td>${escHtml(f.name)}</td><td>${Number.isInteger(f.dv) ? f.dv : "—"}</td></tr>`).join("");
+  return `<table class="er2070-na-table"><thead><tr><th>${escHtml(labels.level)}</th><th>${escHtml(labels.content)}</th><th>${escHtml(labels.dv)}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 // ---------------------------------------------------------------- dibujo
 
 // Circuito esquemático por tipo de piso: trazas comunes y un símbolo central. Usa currentColor (el color del tipo).
@@ -260,6 +307,17 @@ export async function openNetArchitecture(pageOrUuid) {
   const data = pageData(await fromUuid(uuid));
   if (!data) return ui.notifications.warn(L("netArch.noData"));
   return show(uuid);
+}
+
+/** Guarda la arquitectura del editor (0.8.0) en una página del mundo y, si se pide, su texto. Los jugadores reciben
+ *  la vista nueva (o se les cierra si ya no hay pisos revelados). Devuelve el resultado de la validación. */
+export async function saveNetArchitecture(page, data, { content } = {}) {
+  if (!game.user.isGM || page?.documentName !== "JournalEntryPage" || page.pack) throw Error(L("netArch.editor.inCompendium"));
+  const check = validateNetArchitecture(data);
+  if (!check.ok) return check;
+  await page.update({ [`flags.${MODULE_ID}.${FLAG}`]: data, ...(content !== undefined ? { "text.content": content } : {}) });
+  broadcast(page);
+  return check;
 }
 
 // ---------------------------------------------------------------- registro

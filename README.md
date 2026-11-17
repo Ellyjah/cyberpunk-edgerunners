@@ -52,6 +52,18 @@ Las herramientas del motor se abren desde el menú **«2070 ▾»** de la cabece
 - **Modo seguro de tiradas:** interruptor del DJ que devuelve todas las tiradas al sistema base al momento.
 - Las acciones que afectan a otros actores las valida y ejecuta el cliente del DJ.
 
+## Cambios de la versión 0.8.0
+
+- **Editor de arquitecturas de Red, sin código (solo DJ).** Se abre de tres formas:
+  - con clic derecho en una página de la lista de un journal, opción «Crear o editar arquitectura de Red»;
+  - con el botón «Editar» de la ventana «Arquitectura de Red»;
+  - con la herramienta «Nueva arquitectura de Red» de los controles de token, que crea un journal nuevo.
+- En cada piso se elige el tipo y se escriben el nombre, la VD y las notas del DJ. Los pisos se pueden subir, bajar, duplicar y borrar.
+- Los hielos negros se arrastran a sus pisos (un mismo hielo puede repetirse) y un actor, a un nodo de control. Los nombres se completan solos: «Cuervo ×2», «Nodo de control: Torreta».
+- Al guardar, si algo no es válido se indica el piso y no se guarda nada. Si se pide, se escribe o actualiza en la página la tabla de pisos (nivel, contenido y VD).
+- Los pisos ya revelados se conservan y se ajustan si se borran pisos. Los jugadores ven el cambio al momento.
+- 0.7.1: los enlaces de los pisos a hielos y dispositivos se leen en la ventana del DJ.
+
 ## Cambios de la versión 0.7.0
 
 - Ventana «Arquitectura de Red», sincronización de pisos revelados y consulta de varias arquitecturas.
